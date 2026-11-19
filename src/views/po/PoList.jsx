@@ -38,7 +38,17 @@ function RowInfo({ label, value, wide }) {
   );
 }
 
-/** Garis progres tahap PO (UI Navy Ledger): garis utuh + titik per tahap + persentase. */
+// Warna progres naik bertahap: merah → oranye → biru → hijau tua (100%). [batas %, bar, badge bg, badge teks]
+const PROGRESS_TONES = [
+  [0, "bg-slate-300", "bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300"],
+  [25, "bg-red-500", "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300"],
+  [50, "bg-amber-500", "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"],
+  [75, "bg-blue-500", "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"],
+  [95, "bg-emerald-500", "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"],
+  [100, "bg-green-700", "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300"],
+];
+
+/** Progres tahap PO: bar tebal berwarna + badge "% Selesai" (kelipatan 5) + "Tahap x dari n". */
 function StageProgress({ po }) {
   const enabled = STAGE_ORDER.filter((n) => (po.enabled_stages || []).includes(n));
   if (!enabled.length) return null;
@@ -46,28 +56,19 @@ function StageProgress({ po }) {
   const total = enabled.length;
   const doneCount = enabled.filter((n) => done.has(n)).length;
   const finished = doneCount === total;
-  const curIdx = finished ? -1 : enabled.findIndex((n) => !done.has(n));
-  const pct = Math.round((doneCount / total) * 100);
-  const fill = finished ? 100 : total > 1 ? (Math.max(curIdx, 0) / (total - 1)) * 100 : 0;
+  // Dibulatkan ke kelipatan 5; belum selesai maks 95%, sudah ada tahap selesai min 5%.
+  const raw = (doneCount / total) * 100;
+  const pct = finished ? 100 : doneCount ? Math.min(95, Math.max(5, Math.round(raw / 5) * 5)) : 0;
+  const [, bar, badge] = PROGRESS_TONES.find(([max]) => pct <= max);
   return (
-    <div className="mt-3 flex items-center gap-3" aria-label={`Progres ${pct}%`}>
-      <div className="relative mx-1.5 h-[18px] flex-1">
-        <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-border" />
-        <span className="absolute left-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary transition-[width] duration-500" style={{ width: `${fill}%` }} />
-        {enabled.map((n, i) => {
-          const isDone = done.has(n);
-          const isCur = i === curIdx;
-          const left = total > 1 ? (i / (total - 1)) * 100 : 0;
-          return (
-            <span key={n} title={`Tahap ${i + 1}`}
-              className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${isCur
-                ? "h-3.5 w-3.5 border-[3px] border-primary bg-card ring-4 ring-primary/15"
-                : isDone ? "h-2.5 w-2.5 bg-primary" : "h-2.5 w-2.5 border-2 border-border bg-card"}`}
-              style={{ left: `${left}%` }} />
-          );
-        })}
+    <div className="mt-3" aria-label={`Progres ${pct}%`}>
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <span className="text-xs text-muted-foreground">{finished ? "Semua tahap selesai" : `Tahap ${doneCount} dari ${total}`}</span>
+        <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge}`}>{finished ? "Selesai" : `${pct}% Selesai`}</span>
       </div>
-      <b className="w-10 text-right text-xs text-primary">{pct}%</b>
+      <div className="h-2 overflow-hidden rounded-full bg-secondary">
+        <div className={`h-full rounded-full transition-[width] duration-500 ${bar}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
