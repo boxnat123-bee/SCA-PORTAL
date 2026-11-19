@@ -23,7 +23,8 @@ const whenLabel = (d) => {
   if (d < 0) return { text: `Lewat ${-d} hari`, cls: "bg-rose-500/15 text-rose-600 dark:text-rose-400" };
   if (d === 0) return { text: "Hari ini", cls: "bg-rose-500/15 text-rose-600 dark:text-rose-400" };
   if (d === 1) return { text: "Besok", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" };
-  return { text: `H-${d}`, cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" };
+  if (d <= 7) return { text: `H-${d}`, cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" };
+  return { text: `H-${d}`, cls: "bg-sky-500/15 text-sky-700 dark:text-sky-400" };
 };
 
 export default function NotificationBell() {
@@ -66,7 +67,7 @@ export default function NotificationBell() {
         <div className="flex items-center justify-between border-b px-4 py-2.5">
           <div>
             <div className="text-sm font-semibold">Notifikasi</div>
-            <div className="text-[11px] text-muted-foreground">PO H-5 Est. Selesai · Klien jatuh tempo H-3</div>
+            <div className="text-[11px] text-muted-foreground">PO H-14 & H-7 Est. Selesai · Klien jatuh tempo H-3</div>
           </div>
           {unread > 0 && (
             <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={markAll}>

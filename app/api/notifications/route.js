@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const TEMPO_DAYS = 3; // klien jatuh tempo: H-3
-const PO_DAYS = 5;    // PO: H-5 sebelum Est. Selesai
+const PO_DAYS = 14;   // PO: mulai H-14 sebelum Est. Selesai (pengingat ulang saat masuk H-7)
 
 /** Selisih hari (tanggal lokal WIB) dari hari ini ke tanggal YYYY-MM-DD. */
 function daysUntil(dateStr, todayStr) {
@@ -29,7 +29,8 @@ export const GET = handle(async (req) => {
   const today = todayWib();
   const out = [];
 
-  // PO belum selesai, Est. Selesai ≤ 5 hari lagi (atau sudah lewat)
+  // PO belum selesai, Est. Selesai ≤ 14 hari lagi (atau sudah lewat).
+  // id berubah saat masuk H-7 → lonceng menandai belum dibaca lagi.
   const pos = await db.collection(COL.pos).find({ est_end: { $ne: null } }).limit(3000).toArray();
   for (const raw of pos) {
     const po = enrichPo(raw);
@@ -37,7 +38,7 @@ export const GET = handle(async (req) => {
     const d = daysUntil(po.est_end, today);
     if (d === null || d > PO_DAYS) continue;
     out.push({
-      id: `po-${po.id}-${po.est_end}`,
+      id: `po-${po.id}-${po.est_end}${d <= 7 ? "-h7" : "-h14"}`,
       kind: "po",
       title: `PO ${po.po_number} — ${po.client_name}`,
       body: `Tahap: ${po.computed?.current_stage_name || "-"}`,

@@ -53,7 +53,7 @@ function Panel({ title, action, children, className = "" }) {
 const TAG = {
   late: "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
   soon: "bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
-  stock: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+  later: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
 };
 
 export default function Dashboard() {
@@ -75,9 +75,9 @@ export default function Dashboard() {
   const unpaidSum = unpaid.reduce((a, i) => a + (Number(i.remaining_amount) || 0), 0);
   const overdue = unpaid.filter((i) => i.due_date && String(i.due_date).slice(0, 10) < today).length;
 
-  // Perlu perhatian: hanya proses produksi yang mendekati deadline (PO H-5 Est. Selesai)
+  // Perlu perhatian: hanya proses produksi yang mendekati deadline (PO H-14 & H-7 Est. Selesai)
   const attention = (notif?.items || []).filter((n) => n.kind === "po").map((n) => ({
-    key: n.id, tone: n.days < 0 ? "late" : "soon",
+    key: n.id, tone: n.days < 0 ? "late" : n.days <= 7 ? "soon" : "later",
     tag: n.days < 0 ? `Lewat ${-n.days} hari` : n.days === 0 ? "Hari ini" : `H-${n.days}`,
     title: n.title, body: n.body, link: n.link,
   })).slice(0, 8);
@@ -103,7 +103,7 @@ export default function Dashboard() {
       <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr]">
         <Panel title="Perlu perhatian">
           <div className="mt-1.5">
-            {attention.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada PO yang mendekati deadline (H-5).</p>}
+            {attention.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada PO yang mendekati deadline (H-14).</p>}
             {attention.map((a) => (
               <div key={a.key} className="flex items-center gap-3 border-b border-border/60 py-[11px] last:border-0">
                 <span className={`whitespace-nowrap rounded-full px-2 py-[3px] text-[11px] font-semibold ${TAG[a.tone]}`}>{a.tag}</span>
