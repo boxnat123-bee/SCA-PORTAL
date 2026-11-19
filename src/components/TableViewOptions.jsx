@@ -29,7 +29,7 @@ export default function TableViewOptions({ columns, visible, onToggle, className
         >
           <SlidersHorizontal className="h-4 w-4" />
           <span className="hidden sm:inline">Kolom</span>
-          <span className="font-mono text-xs tabular-nums text-muted-foreground">{shownCount}/{columns.length}</span>
+          <span className="tabular-nums text-xs tabular-nums text-muted-foreground">{shownCount}/{columns.length}</span>
           <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
         </Button>
       </PopoverTrigger>

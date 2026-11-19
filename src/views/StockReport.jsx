@@ -1,245 +1,164 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileDown, Inbox, Search, X, SearchX } from "lucide-react";
+import { FileDown, Search, X, SearchX, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
 import { formatNumber } from "@/lib/format";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import PageContainer from "@/components/layout/PageContainer";
 
 // Pencarian: setiap kata kunci (dipisah spasi) harus ada di teks item.
 // Angka dibandingkan dengan titik maupun koma (65.5 = 65,5), dan "x" pada ukuran boleh pakai spasi.
 const norm = (v) => String(v ?? "").toLowerCase().replace(/,/g, ".").replace(/\s*[x×]\s*/g, "x");
 const matchAll = (hay, tokens) => tokens.every((t) => hay.includes(t));
-const supplierText = (item) => (item.suppliers || []).join(" ");
 
-const CATEGORIES = [
-  { value: "all", label: "Semua Stok" },
-  { value: "paper", label: "Stok Kertas" },
-  { value: "ink", label: "Stok Tinta" },
-  { value: "other", label: "Stok Lain" },
+const TABS = [
+  { id: "paper", label: "Kertas", head: "Jenis kertas" },
+  { id: "ink", label: "Tinta", head: "Jenis tinta" },
+  { id: "other", label: "Lain", head: "Nama barang" },
 ];
 
-function NoMatch({ colSpan, q }) {
+const nameOf = (tab, it) => (tab === "paper" ? it.jenis_kertas : tab === "ink" ? it.jenis_tinta : it.nama_barang);
+const specOf = (tab, it) => (tab === "paper"
+  ? `${formatNumber(it.gramatur, 2)} gr · ${formatNumber(it.panjang, 2)} × ${formatNumber(it.lebar, 2)}`
+  : "");
+const isRim = (p) => String(p.satuan || "Rim").trim().toLowerCase() === "rim";
+
+function Kpi({ label, value, unit, sub, danger }) {
   return (
-    <TableRow className="hover:bg-transparent">
-      <TableCell colSpan={colSpan} className="py-6">
-        <Empty className="py-3">
-          <EmptyHeader>
-            <EmptyMedia variant="icon"><SearchX /></EmptyMedia>
-            <EmptyTitle>Tidak ditemukan</EmptyTitle>
-            <EmptyDescription>Tidak ada stok yang cocok dengan “{q}”.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </TableCell>
-    </TableRow>
+    <div className="rounded-xl border border-border bg-card px-[18px] py-4">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className={`mt-1.5 text-[26px] font-bold leading-tight tracking-[-0.02em] tabular-nums ${danger ? "text-rose-700 dark:text-rose-400" : ""}`}>
+        {value}{unit && <span className="ml-1 text-sm font-medium text-muted-foreground">{unit}</span>}
+      </div>
+      {sub && <div className="mt-1 truncate text-xs text-muted-foreground">{sub}</div>}
+    </div>
   );
 }
 
 export default function StockReport() {
-  const fSupplier = "all"; // filter supplier dihapus (stok per item)
+  const [tab, setTab] = useState("paper");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
   const tokens = useMemo(() => norm(query).split(/\s+/).filter(Boolean), [query]);
-  const searching = tokens.length > 0;
-  const show = (cat) => category === "all" || category === cat;
 
-  // Cache react-query: tampil instan dari cache, refresh otomatis di background.
-  const { data, error } = useQuery({
+  const { data, error, isLoading } = useQuery({
     queryKey: ["reports", "stock"],
     queryFn: async () => (await api.get("/reports/stock")).data,
     refetchOnMount: "always",
   });
   useEffect(() => { if (error) toast.error(apiError(error)); }, [error]);
 
-  const dl = async (path, name) => {
-    try { await downloadPdf(path, {}, name); toast.success("PDF diunduh."); }
+  const paper = data?.paper || [], ink = data?.ink || [], other = data?.other || [];
+  const all = { paper, ink, other };
+  const empty = [...paper, ...ink, ...other].filter((x) => Number(x.stock) <= 0);
+  const rimTotal = paper.filter(isRim).reduce((a, p) => a + Math.max(Number(p.stock) || 0, 0), 0);
+  const kgTotal = ink.reduce((a, p) => a + Math.max(Number(p.stock) || 0, 0), 0);
+
+  const rows = useMemo(() => {
+    const list = all[tab] || [];
+    if (!tokens.length) return list;
+    return list.filter((it) => matchAll(norm([
+      nameOf(tab, it), specOf(tab, it), `${it.gramatur || ""}gr`, `${it.panjang || ""}x${it.lebar || ""}`,
+      it.satuan, (it.suppliers || []).join(" "), it.keterangan,
+    ].join(" | ")), tokens));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, tab, tokens]);
+
+  const dl = async () => {
+    try { await downloadPdf("/pdf/stock-ringkas", {}, "laporan-stok-akhir.pdf"); toast.success("PDF diunduh."); }
     catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); }
   };
 
-  const supStock = (item) => item.stock || 0;
-  const filtered = fSupplier !== "all";
-
-  const paperRows = useMemo(() => {
-    if (!data) return [];
-    const base = filtered ? data.paper.filter((p) => supStock(p, fSupplier) !== 0) : data.paper;
-    if (!searching) return base;
-    return base.filter((p) => matchAll(norm([
-      p.jenis_kertas, `${p.gramatur} gsm`, `${p.gramatur}gr`, `${p.panjang}x${p.lebar}`,
-      `${formatNumber(p.panjang, 2)}x${formatNumber(p.lebar, 2)}`, p.satuan || "Rim", supplierText(p), "kertas",
-    ].join(" | ")), tokens));
-  }, [data, fSupplier, filtered, searching, tokens]);
-
-  const inkRows = useMemo(() => {
-    if (!data) return [];
-    const base = filtered ? data.ink.filter((p) => supStock(p, fSupplier) !== 0) : data.ink;
-    if (!searching) return base;
-    return base.filter((p) => matchAll(norm([p.jenis_tinta, "kg", supplierText(p), "tinta"].join(" | ")), tokens));
-  }, [data, fSupplier, filtered, searching, tokens]);
-
-  const otherRows = useMemo(() => {
-    if (!data) return [];
-    const base = filtered ? (data.other || []).filter((p) => supStock(p, fSupplier) !== 0) : (data.other || []);
-    if (!searching) return base;
-    return base.filter((p) => matchAll(norm([p.nama_barang, p.satuan, supplierText(p), "lain"].join(" | ")), tokens));
-  }, [data, fSupplier, filtered, searching, tokens]);
-
-  // Saat mencari, sembunyikan kategori tanpa hasil (kecuali semuanya kosong → tampilkan pesan).
-  const totalHits = (show("paper") ? paperRows.length : 0) + (show("ink") ? inkRows.length : 0) + (show("other") ? otherRows.length : 0);
-  const visible = (cat, rows) => show(cat) && (!searching || rows.length > 0 || totalHits === 0);
-  const vPaper = visible("paper", paperRows), vInk = visible("ink", inkRows), vOther = visible("other", otherRows);
-
-  // Total hanya dari item ber-satuan Rim (satuan custom tidak dijumlahkan ke total Rim).
-  const isRim = (p) => String(p.satuan || "Rim").trim().toLowerCase() === "rim";
-  const paperTotal = useMemo(() => filtered ? paperRows.filter(isRim).reduce((a, p) => a + supStock(p, fSupplier), 0) : (data?.paper || []).filter(isRim).reduce((a, p) => a + Math.max(p.stock, 0), 0), [paperRows, fSupplier, filtered, data]);
-  const inkTotal = useMemo(() => filtered ? inkRows.reduce((a, p) => a + supStock(p, fSupplier), 0) : (data?.ink || []).reduce((a, p) => a + Math.max(p.stock, 0), 0), [inkRows, fSupplier, filtered, data]);
-
-  const badges = (item) => (item.suppliers || []).length ? (
-    <span className="text-sm">{item.suppliers.join(", ")}</span>
-  ) : <span className="text-xs text-muted-foreground">-</span>;
+  const cur = TABS.find((t) => t.id === tab);
 
   return (
     <PageContainer
       testid="stock-report-page"
-      pageTitle="Laporan Stok Ringkas"
-      pageDescription="Stok akhir saat ini per item beserta supplier."
+      isLoading={isLoading && !data}
+      pageEyebrow="Stok"
+      pageTitle="Laporan Stok Akhir"
       pageHeaderAction={(
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" data-testid="pdf-paper-mutations" onClick={() => dl("/pdf/paper-mutations", "laporan-mutasi-kertas.pdf")}>
-            <FileDown className="h-4 w-4" /> Mutasi Kertas
-          </Button>
-          <Button variant="outline" className="gap-2" data-testid="pdf-ink-mutations" onClick={() => dl("/pdf/ink-mutations", "laporan-mutasi-tinta.pdf")}>
-            <FileDown className="h-4 w-4" /> Mutasi Tinta
-          </Button>
-          <Button variant="outline" className="gap-2" data-testid="pdf-other-mutations" onClick={() => dl("/pdf/other-mutations", "laporan-mutasi-lain.pdf")}>
-            <FileDown className="h-4 w-4" /> Mutasi Lain
-          </Button>
-          <Button variant="outline" className="gap-2" data-testid="pdf-stock-ringkas" onClick={() => dl("/pdf/stock-ringkas", "laporan-stok-ringkas.pdf")}>
-            <FileDown className="h-4 w-4" /> Stok Akhir
-          </Button>
-        </div>
+        <Button variant="outline" className="gap-2" data-testid="pdf-stock-ringkas" onClick={dl}>
+          <FileDown className="h-4 w-4" /> Unduh PDF
+        </Button>
       )}
     >
+      <section className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+        <Kpi label="Kertas" value={formatNumber(rimTotal, 2)} unit="Rim" sub={`${paper.length} item`} />
+        <Kpi label="Tinta" value={formatNumber(kgTotal, 2)} unit="Kg" sub={`${ink.length} item`} />
+        <Kpi label="Barang lain" value={`${other.length} item`} sub={other.slice(0, 3).map((o) => o.nama_barang).join(", ") || "-"} />
+        <Kpi label="Stok habis" value={`${empty.length} item`} danger={empty.length > 0}
+          sub={empty.slice(0, 2).map((x) => x.jenis_kertas || x.jenis_tinta || x.nama_barang).join(", ") || "Semua tersedia"} />
+      </section>
 
-      <Card className="p-4">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="w-full min-w-0 space-y-1.5 sm:w-auto sm:flex-1 sm:min-w-[240px]">
-            <Label htmlFor="stock-search" className="flex items-center gap-1.5 text-xs"><Search className="h-3.5 w-3.5" /> Cari Stok</Label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input id="stock-search" data-testid="stock-search" value={query} onChange={(e) => setQuery(e.target.value)}
-                placeholder="cth: art paper 150, 65x100, cyan, nama supplier…" className="pl-9 pr-9" />
-              {query && (
-                <button type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="flex flex-wrap items-center gap-2.5 border-b border-border/60 p-3.5">
+          <div role="tablist" aria-label="Kategori stok" className="flex gap-1 rounded-[10px] bg-secondary p-1">
+            {TABS.map((t) => (
+              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} data-testid={`stock-tab-${t.id}`}
+                onClick={() => setTab(t.id)}
+                className={`h-8 rounded-full px-3.5 text-[12.5px] font-semibold transition-colors ${tab === t.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground/75 hover:text-foreground"}`}>
+                {t.label}
+              </button>
+            ))}
           </div>
-          <div className="w-full space-y-1.5 sm:w-auto">
-            <Label className="text-xs">Kategori</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-full sm:w-[170px]" data-testid="stock-category"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          {searching && (
-            <p className="w-full text-xs text-muted-foreground" data-testid="stock-search-summary">
-              Hasil “{query.trim()}”:{" "}
-              {[show("paper") && `${paperRows.length} kertas`, show("ink") && `${inkRows.length} tinta`, show("other") && `${otherRows.length} barang lain`].filter(Boolean).join(" • ")}
-            </p>
-          )}
+          <label className="flex h-[38px] min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3 text-muted-foreground focus-within:border-primary/60">
+            <Search className="h-4 w-4 shrink-0" />
+            <input data-testid="stock-search" value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari item atau supplier…" aria-label="Cari stok"
+              className="w-full bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground" />
+            {query && (
+              <button type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")} className="rounded p-1 hover:bg-secondary">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </label>
         </div>
-      </Card>
 
-      <div className={`grid gap-5 ${vPaper && vInk ? "xl:grid-cols-2" : ""}`}>
-        {vPaper && <Card className="min-w-0 overflow-hidden">
-          <div className="border-b border-border px-5 py-3">
-            <h3 className="font-display text-lg font-bold">Stok Kertas</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Jenis</TableHead><TableHead>Gramatur</TableHead>
-                  <TableHead>Ukuran</TableHead><TableHead>Supplier</TableHead>
-                  <TableHead className="text-right">Stok</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody data-testid="paper-stock-table">
-                {paperRows.length ? paperRows.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{p.jenis_kertas}</TableCell>
-                    <TableCell>{formatNumber(p.gramatur, 2)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatNumber(p.panjang, 2)}x{formatNumber(p.lebar, 2)} cm</TableCell>
-                    <TableCell className="max-w-[260px] whitespace-normal">{badges(p)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} {p.satuan || "Rim"}</TableCell>
-                  </TableRow>
-                )) : searching ? <NoMatch colSpan={5} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>}
-
-        {vInk && <Card className="min-w-0 overflow-hidden">
-          <div className="border-b border-border px-5 py-3">
-            <h3 className="font-display text-lg font-bold">Stok Tinta (Kg)</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow><TableHead>Jenis Tinta</TableHead><TableHead>Supplier</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
-              </TableHeader>
-              <TableBody data-testid="ink-stock-table">
-                {inkRows.length ? inkRows.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{p.jenis_tinta}</TableCell>
-                    <TableCell className="max-w-[260px] whitespace-normal">{badges(p)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} Kg</TableCell>
-                  </TableRow>
-                )) : searching ? <NoMatch colSpan={3} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={3} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>}
-      </div>
-
-      {vOther && <Card className="overflow-hidden">
-        <div className="border-b border-border px-5 py-3">
-          <h3 className="font-display text-lg font-bold">Stok Lain</h3>
-        </div>
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow><TableHead>Nama Barang</TableHead><TableHead>Satuan</TableHead><TableHead>Supplier</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
-            </TableHeader>
-            <TableBody data-testid="other-stock-table">
-              {otherRows.length ? otherRows.map((p, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{p.nama_barang}</TableCell>
-                  <TableCell>{p.satuan || "-"}</TableCell>
-                  <TableCell className="max-w-[260px] whitespace-normal">{badges(p)}</TableCell>
-                  <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} {p.satuan || ""}</TableCell>
-                </TableRow>
-              )) : searching ? <NoMatch colSpan={4} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
-            </TableBody>
-          </Table>
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-secondary/50 text-left text-[11.5px] font-semibold text-muted-foreground">
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">{cur.head}</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Satuan</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Supplier</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5 text-right">Stok akhir</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody data-testid={`${tab}-stock-table`}>
+              {rows.map((it) => {
+                const low = Number(it.stock) <= 0;
+                return (
+                  <tr key={it.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30">
+                    <td className="px-3.5 py-3">
+                      <div className="font-semibold">{nameOf(tab, it)}</div>
+                      {specOf(tab, it) && <div className="text-xs text-muted-foreground">{specOf(tab, it)}</div>}
+                    </td>
+                    <td className="px-3.5 py-3">{it.satuan || "-"}</td>
+                    <td className="px-3.5 py-3 text-foreground/75">{(it.suppliers || []).join(", ") || "–"}</td>
+                    <td className={`px-3.5 py-3 text-right font-bold ${low ? "text-rose-700 dark:text-rose-400" : ""}`}>{formatNumber(it.stock, 2)}</td>
+                    <td className="px-3.5 py-3 text-foreground/75">{it.keterangan || "–"}</td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                    <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-secondary">
+                      {tokens.length ? <SearchX className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
+                    </div>
+                    {tokens.length ? `Tidak ada ${cur.label.toLowerCase()} yang cocok dengan “${query.trim()}”.` : `Belum ada item ${cur.label.toLowerCase()}. Tambah item di menu Mutasi.`}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </Card>}
+      </div>
     </PageContainer>
   );
 }

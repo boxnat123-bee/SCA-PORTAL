@@ -11,13 +11,13 @@ const RateRow = ({ label, pct, onPct, amount }) => (
             inputMode="decimal"
             value={pct ?? ""}
             onChange={(e) => onPct(e.target.value.replace(/[^\d.,]/g, ""))}
-            className="h-9 w-full rounded-md border border-border bg-background pl-2.5 pr-6 text-right font-mono text-sm tabular-nums shadow-soft outline-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/25"
+            className="h-9 w-full rounded-md border border-border bg-background pl-2.5 pr-6 text-right tabular-nums text-sm tabular-nums shadow-soft outline-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/25"
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
         </div>
       </div>
     </div>
-    <span className="font-mono text-sm">{formatRp(amount)}</span>
+    <span className="tabular-nums text-sm">{formatRp(amount)}</span>
   </div>
 );
 
@@ -26,7 +26,7 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
     <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-lift" data-testid="summary-panel">
       <div className="bg-gradient-to-br from-primary to-primary/80 px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary-foreground/80">Total HPP — Harga Jual / Pcs</p>
-        <p className="font-mono text-3xl font-semibold text-primary-foreground mt-1" data-testid="summary-final">{formatRp(res.final)}</p>
+        <p className="tabular-nums text-3xl font-semibold text-primary-foreground mt-1" data-testid="summary-final">{formatRp(res.final)}</p>
       </div>
       <div className="p-5">
         <div className="space-y-0.5">
@@ -40,7 +40,7 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
                 <button onClick={() => onSelect && onSelect(c.key)}
                   className="flex-1 flex items-center justify-between gap-3 group text-left">
                   <span className={`text-sm transition-colors duration-200 ${on ? "text-muted-foreground group-hover:text-primary" : "text-muted-foreground/40 line-through"}`}>{c.label}</span>
-                  <span className={`font-mono text-sm ${on ? "" : "text-muted-foreground/40"}`}>{formatRp(c.value)}</span>
+                  <span className={`tabular-nums text-sm ${on ? "" : "text-muted-foreground/40"}`}>{formatRp(c.value)}</span>
                 </button>
               </div>
             );
@@ -48,7 +48,7 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
         </div>
         <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
           <span className="text-sm font-semibold">Subtotal HPP</span>
-          <span className="font-mono text-base font-semibold" data-testid="summary-subtotal">{formatRp(res.subtotal)}</span>
+          <span className="tabular-nums text-base font-semibold" data-testid="summary-subtotal">{formatRp(res.subtotal)}</span>
         </div>
         <div className="mt-2">
           <RateRow label="Laba" pct={rates.labaPct} onPct={(v) => onRate("labaPct", v)} amount={res.laba} />
@@ -57,7 +57,7 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
         </div>
         <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t-2 border-primary">
           <span className="text-sm font-semibold text-primary">HARGA JUAL / PCS</span>
-          <span className="font-mono text-lg font-bold text-primary">{formatRp(res.final)}</span>
+          <span className="tabular-nums text-lg font-bold text-primary">{formatRp(res.final)}</span>
         </div>
       </div>
     </div>

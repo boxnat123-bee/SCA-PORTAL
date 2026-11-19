@@ -30,6 +30,7 @@ export default function PageContainer({
   accessFallback,
   pageTitle,
   pageDescription,
+  pageEyebrow,
   pageHeaderAction,
   className = "",
   testid,
@@ -66,16 +67,16 @@ export default function PageContainer({
       ) : (
         <>
           {hasHeader && (
-            <div className="mb-6 flex shrink-0 flex-wrap items-start justify-between gap-3">
-              <Heading title={pageTitle ?? ""} description={pageDescription} />
+            <div className="mb-5 flex shrink-0 flex-wrap items-end justify-between gap-3">
+              <Heading title={pageTitle ?? ""} description={pageDescription} eyebrow={pageEyebrow} />
               {pageHeaderAction && <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">{pageHeaderAction}</div>}
             </div>
           )}
           <div
             className={
               fillHeight
-                ? "space-y-6 md:flex md:min-h-0 md:flex-1 md:flex-col md:gap-6 md:space-y-0"
-                : "space-y-6"
+                ? "space-y-5 md:flex md:min-h-0 md:flex-1 md:flex-col md:gap-5 md:space-y-0"
+                : "space-y-5"
             }
           >
             {children}

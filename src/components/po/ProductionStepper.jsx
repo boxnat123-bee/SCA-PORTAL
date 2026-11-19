@@ -101,7 +101,7 @@ export default function ProductionStepper({ po, onSelect, activeStage }) {
                   />
                 )}
                 <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-transform duration-200 ease-out group-hover:scale-105 ${COLORS[st]}`}>
-                  {st === "done" ? <Check className="h-4 w-4" /> : st === "processing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="font-mono tabular-nums">{idx + 1}</span>}
+                  {st === "done" ? <Check className="h-4 w-4" /> : st === "processing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="tabular-nums tabular-nums">{idx + 1}</span>}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs text-muted-foreground">Langkah {idx + 1}</div>

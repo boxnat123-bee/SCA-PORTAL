@@ -1,129 +1,204 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
-} from "recharts";
-import { FileStack, Droplets, Activity, Boxes, ArrowRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import api from "@/lib/api";
-import { formatNumber, formatDateID, TRX_LABEL } from "@/lib/format";
-import StatCard from "@/components/StatCard";
+import * as poApi from "@/lib/poApi";
+import { getInvoices } from "@/lib/tempoApi";
+import { useAuth } from "@/context/AuthContext";
+import { formatNumber, formatRupiah } from "@/lib/format";
+import { stagePos, stageName } from "@/lib/poStages";
 import PageContainer from "@/components/layout/PageContainer";
 import ChartBox from "@/components/ChartBox";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent,
-} from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 const TREND_CONFIG = {
-  paper_masuk: { label: "Kertas Masuk", color: "hsl(var(--chart-1))" },
-  paper_keluar: { label: "Kertas Keluar", color: "hsl(var(--chart-2))" },
-  ink_masuk: { label: "Tinta Masuk", color: "hsl(var(--chart-3))" },
-  ink_keluar: { label: "Tinta Keluar", color: "hsl(var(--chart-4))" },
+  paper_masuk: { label: "Masuk", color: "hsl(var(--chart-1))" },
+  paper_keluar: { label: "Keluar", color: "hsl(var(--chart-2))" },
 };
 
-const trxBadge = (t) => {
-  const map = { masuk: "bg-emerald-500/15 text-emerald-600", keluar: "bg-rose-500/15 text-rose-500", };
-  return <span className={`rounded px-2 py-0.5 text-xs font-medium ${map[t]}`}>{TRX_LABEL[t]}</span>;
+const pad = (n) => String(n).padStart(2, "0");
+const localYmd = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const slash = (s) => { const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}` : "-"; };
+const greet = () => {
+  const h = new Date().getHours();
+  return h < 11 ? "Selamat pagi" : h < 15 ? "Selamat siang" : h < 18 ? "Selamat sore" : "Selamat malam";
+};
+/** Juta ringkas: 26500000 → "Rp 26,5 jt" */
+const rpShort = (v) => {
+  const n = Number(v) || 0;
+  if (n >= 1e9) return `Rp ${formatNumber(n / 1e9, 1)} M`;
+  if (n >= 1e6) return `Rp ${formatNumber(n / 1e6, 1)} jt`;
+  return formatRupiah(n);
+};
+const catBar = (n) => (n === 11 ? "bg-orange-600" : stagePos(n) <= 4 ? "bg-violet-600" : "bg-red-600");
+
+function Kpi({ label, value, unit, sub, subTone }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-[18px] py-4">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1.5 text-[26px] font-bold leading-tight tracking-[-0.02em] tabular-nums">
+        {value}{unit && <span className="ml-1 text-sm font-medium text-muted-foreground">{unit}</span>}
+      </div>
+      {sub && <div className={`mt-1 truncate text-xs ${subTone === "bad" ? "text-rose-700 dark:text-rose-400" : "text-muted-foreground"}`}>{sub}</div>}
+    </div>
+  );
+}
+
+function Panel({ title, action, children, className = "" }) {
+  return (
+    <section className={`rounded-xl border border-border bg-card px-5 py-[18px] ${className}`}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-bold">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+const TAG = {
+  late: "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  soon: "bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
+  stock: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
 };
 
 export default function Dashboard() {
-  // Cache react-query: dashboard tampil instan dari cache, refresh di background.
-  const { data } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: async () => (await api.get("/dashboard")).data,
-    refetchOnMount: "always",
-  });
+  const { user } = useAuth();
+  const isSuper = user?.role === "superadmin";
+  const today = localYmd();
+
+  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: async () => (await api.get("/dashboard")).data, refetchOnMount: "always" });
+  const { data: notif } = useQuery({ queryKey: ["notifications"], queryFn: async () => (await api.get("/notifications")).data });
+  const { data: pos = [] } = useQuery({ queryKey: ["po", "list-home"], queryFn: () => poApi.listPos() });
+  const { data: scheds = [] } = useQuery({ queryKey: ["po", "schedules-home"], queryFn: () => poApi.listSchedules() });
+  const { data: invoices = [] } = useQuery({ queryKey: ["tempo", "home"], queryFn: () => getInvoices(), enabled: isSuper });
 
   if (!data) return <PageContainer isLoading testid="stok-dashboard-loading" />;
 
+  const running = pos.filter((p) => !p.computed?.is_completed);
+  const readyShip = running.filter((p) => p.computed?.bucket === "siap_kirim").length;
+  const unpaid = invoices.filter((i) => i.status !== "lunas");
+  const unpaidSum = unpaid.reduce((a, i) => a + (Number(i.remaining_amount) || 0), 0);
+  const overdue = unpaid.filter((i) => i.due_date && String(i.due_date).slice(0, 10) < today).length;
+
+  // Perlu perhatian: pengingat (PO H-5, jatuh tempo H-3) + stok habis
+  const attention = [
+    ...(notif?.items || []).map((n) => ({
+      key: n.id, tone: n.days < 0 ? "late" : "soon",
+      tag: n.days < 0 ? `Lewat ${-n.days} hari` : n.days === 0 ? "Hari ini" : `H-${n.days}`,
+      title: n.title, body: n.body, link: n.link,
+    })),
+    ...(data.low_stock || []).map((s) => ({
+      key: `s-${s.id}`, tone: "stock", tag: "Stok habis", title: s.label || s.jenis_tinta || s.nama_barang,
+      body: `${s.kategori} · sisa ${formatNumber(s.stock, 2)} ${s.satuan || ""}`,
+      link: s.kategori === "Kertas" ? "/stok/kertas" : s.kategori === "Tinta" ? "/stok/tinta" : "/stok/lainnya",
+    })),
+  ].slice(0, 6);
+
+  // Produksi hari ini: jadwal tahap yang mencakup hari ini + PO yang selesai/kirim hari ini
+  const todaySched = scheds.filter((s) => s.date <= today && today <= (s.end_date || s.date));
+  const todayDue = running.filter((p) => p.est_end === today && !todaySched.some((s) => s.po_id === p.id));
+
+  const dateLabel = new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
   return (
-    <PageContainer
-      testid="stok-dashboard-page"
-      pageTitle="Dashboard"
-      pageDescription={`Ringkasan stok & aktivitas mutasi tahun ${data.year}.`}
-    >
+    <PageContainer testid="stok-dashboard-page" pageEyebrow={dateLabel} pageTitle={`${greet()}, ${user?.name || ""}`}>
+      <section className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+        <Kpi label="Stok kertas" value={formatNumber(data.total_paper_stock, 2)} unit="Rim"
+          sub={`${data.item_counts?.paper || 0} item${(data.low_stock || []).some((s) => s.kategori === "Kertas") ? " · ada yang habis" : ""}`} />
+        <Kpi label="Stok tinta" value={formatNumber(data.total_ink_stock, 2)} unit="Kg" sub={`${data.item_counts?.ink || 0} item`} />
+        <Kpi label="PO berjalan" value={running.length} sub={readyShip ? `${readyShip} siap kirim` : "Tidak ada yang siap kirim"} />
+        {isSuper
+          ? <Kpi label="Tagihan belum lunas" value={rpShort(unpaidSum)} sub={overdue ? `${overdue} lewat jatuh tempo` : `${unpaid.length} invoice`} subTone={overdue ? "bad" : ""} />
+          : <Kpi label="Mutasi hari ini" value={data.mutations_today} sub="Kertas, tinta & lain" />}
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard testid="card-total-paper" icon={FileStack} accent="primary" label="Total Stok Kertas"
-          value={`${formatNumber(data.total_paper_stock)} Rim`} />
-        <StatCard testid="card-total-ink" icon={Droplets} accent="rose" label="Total Stok Tinta"
-          value={`${formatNumber(data.total_ink_stock)} Kg`} />
-        <StatCard testid="card-mutations-today" icon={Activity} accent="sky" label="Mutasi Hari Ini"
-          value={`${data.mutations_today} transaksi`} sub="Kertas & tinta" />
-        <StatCard testid="card-item-count" icon={Boxes} accent="emerald" label="Jumlah Item Stok"
-          value={`${(data.item_counts?.paper || 0) + (data.item_counts?.ink || 0) + (data.item_counts?.other || 0)} item`}
-          sub={`Kertas ${data.item_counts?.paper || 0} • Tinta ${data.item_counts?.ink || 0} • Lain ${data.item_counts?.other || 0}`} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
-          <h3 className="font-display text-lg font-bold">Tren Mutasi (6 Bulan Terakhir)</h3>
-          <p className="mb-4 text-xs text-muted-foreground">Perbandingan jumlah Masuk vs Keluar.</p>
-          <ChartBox className="h-64" data-testid="dashboard-trend-chart">
-            <ChartContainer config={TREND_CONFIG}>
-              <AreaChart data={data.trend} margin={{ left: -20, right: 8, top: 4 }}>
-                <defs>
-                  {Object.keys(TREND_CONFIG).map((k) => (
-                    <linearGradient key={k} id={`fill-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={`var(--color-${k})`} stopOpacity={0.35} />
-                      <stop offset="95%" stopColor={`var(--color-${k})`} stopOpacity={0.02} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tickMargin={4} tick={{ fontSize: 12 }} />
-                <ChartTooltip
-                  cursor={{ strokeDasharray: "4 4", stroke: "hsl(var(--muted-foreground))", strokeOpacity: 0.5 }}
-                  content={<ChartTooltipContent formatter={(v) => formatNumber(v)} />}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                {Object.keys(TREND_CONFIG).map((k) => (
-                  <Area
-                    key={k}
-                    type="monotone"
-                    dataKey={k}
-                    name={TREND_CONFIG[k].label}
-                    stroke={`var(--color-${k})`}
-                    strokeWidth={2}
-                    fill={`url(#fill-${k})`}
-                    dot={false}
-                    activeDot={{ r: 3.5, strokeWidth: 2 }}
-                  />
-                ))}
-              </AreaChart>
-            </ChartContainer>
-          </ChartBox>
-        </Card>
-
-        <Card className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-display text-lg font-bold">Mutasi Terbaru</h3>
-          </div>
-          <div className="space-y-2" data-testid="dashboard-recent-list">
-            {data.recent.length === 0 && <p className="text-sm text-muted-foreground">Belum ada mutasi.</p>}
-            {data.recent.map((m) => (
-              <div key={m.id} className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px]">{m.kategori}</Badge>
-                    <span className="truncate text-sm font-medium">{m.nama}</span>
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">{formatDateID(m.date)} • {m.pic_name}</div>
+      <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr]">
+        <Panel title="Perlu perhatian">
+          <div className="mt-1.5">
+            {attention.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada yang perlu diperhatikan saat ini.</p>}
+            {attention.map((a) => (
+              <div key={a.key} className="flex items-center gap-3 border-b border-border/60 py-[11px] last:border-0">
+                <span className={`whitespace-nowrap rounded-full px-2 py-[3px] text-[11px] font-semibold ${TAG[a.tone]}`}>{a.tag}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13.5px] font-semibold">{a.title}</div>
+                  <div className="truncate text-xs text-muted-foreground">{a.body}</div>
                 </div>
-                <div className="text-right">
-                  {trxBadge(m.jenis_transaksi)}
-                  <div className="mt-0.5 text-xs font-semibold">{formatNumber(m.jumlah)} {m.satuan}</div>
-                </div>
+                <Link to={a.link} className="text-[12.5px] font-semibold text-primary hover:underline">Buka</Link>
               </div>
             ))}
           </div>
-          <Link to="/kertas" className="mt-3 flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-            Lihat semua mutasi <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </Card>
+        </Panel>
+
+        <Panel title="Produksi hari ini" action={<Link to="/po/kalender" className="text-[12.5px] font-semibold text-primary hover:underline">Kalender</Link>}>
+          <div className="mt-3.5 flex flex-col gap-2.5">
+            {todaySched.length === 0 && todayDue.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Belum ada jadwal produksi hari ini.</p>}
+            {todaySched.map((s) => (
+              <Link key={s.id} to={`/po/pos/${s.po_id}`} className="flex items-start gap-3 rounded-lg p-1 hover:bg-secondary/50">
+                <span className={`w-1 self-stretch rounded ${catBar(s.stage_number)}`} />
+                <div className="min-w-0">
+                  <div className="truncate text-[13.5px] font-semibold">{s.po_number} · {s.client_name}</div>
+                  <div className="text-xs text-muted-foreground">Tahap {stagePos(s.stage_number)} · {stageName(s.stage_number)}{(s.end_date || s.date) !== s.date ? ` · s/d ${slash(s.end_date)}` : ""}</div>
+                </div>
+              </Link>
+            ))}
+            {todayDue.map((p) => (
+              <Link key={p.id} to={`/po/pos/${p.id}`} className="flex items-start gap-3 rounded-lg p-1 hover:bg-secondary/50">
+                <span className="w-1 self-stretch rounded bg-orange-600" />
+                <div className="min-w-0">
+                  <div className="truncate text-[13.5px] font-semibold">{p.po_number} · {p.client_name}</div>
+                  <div className="text-xs text-muted-foreground">Target selesai hari ini · {p.computed?.current_stage_name || "-"}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr]">
+        <Panel title="Mutasi kertas 6 bulan" action={
+          <div className="flex gap-3.5 text-xs text-foreground/75">
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-[hsl(var(--chart-1))]" />Masuk</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-[hsl(var(--chart-2))]" />Keluar</span>
+          </div>}>
+          <ChartBox className="mt-4 h-56" data-testid="dashboard-trend-chart">
+            <ChartContainer config={TREND_CONFIG}>
+              <BarChart data={data.trend} margin={{ left: -18, right: 4, top: 4 }} barGap={4}>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={4} tick={{ fontSize: 12 }} />
+                <ChartTooltip cursor={{ fill: "hsl(var(--secondary))" }} content={<ChartTooltipContent formatter={(v) => `${formatNumber(v)} Rim`} />} />
+                <Bar dataKey="paper_masuk" name="Masuk" fill="var(--color-paper_masuk)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                <Bar dataKey="paper_keluar" name="Keluar" fill="var(--color-paper_keluar)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+              </BarChart>
+            </ChartContainer>
+          </ChartBox>
+        </Panel>
+
+        <Panel title="Mutasi terbaru">
+          <div className="mt-1.5" data-testid="dashboard-recent-list">
+            {data.recent.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Belum ada mutasi.</p>}
+            {data.recent.slice(0, 6).map((m) => {
+              const masuk = m.jenis_transaksi === "masuk";
+              const note = [masuk ? m.supplier : m.nama_cetakan, m.pic_name].filter(Boolean).join(" · ");
+              return (
+                <div key={m.id} className="flex items-center gap-3 border-b border-border/60 py-[11px] last:border-0">
+                  <span className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-lg ${masuk ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-rose-500/10 text-rose-700 dark:text-rose-400"}`}>
+                    {masuk ? <ArrowDownToLine className="h-4 w-4" /> : <ArrowUpFromLine className="h-4 w-4" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold">{m.nama}</div>
+                    <div className="truncate text-[11.5px] text-muted-foreground">{note} · {slash(m.date)} {m.time || ""}</div>
+                  </div>
+                  <b className={`whitespace-nowrap text-[13px] tabular-nums ${masuk ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
+                    {masuk ? "+" : "−"}{formatNumber(m.jumlah, 2)} {m.satuan || ""}
+                  </b>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
       </div>
     </PageContainer>
   );

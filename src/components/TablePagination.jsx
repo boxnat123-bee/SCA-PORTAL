@@ -31,8 +31,8 @@ export default function TablePagination({
       data-testid="table-pagination"
     >
       <div className="whitespace-nowrap text-sm text-muted-foreground">
-        Menampilkan <span className="font-mono font-semibold tabular-nums text-foreground">{from}–{to}</span>{" "}
-        dari <span className="font-mono font-semibold tabular-nums text-foreground">{total}</span> baris
+        Menampilkan <span className="tabular-nums font-semibold tabular-nums text-foreground">{from}–{to}</span>{" "}
+        dari <span className="tabular-nums font-semibold tabular-nums text-foreground">{total}</span> baris
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6 lg:gap-8">
@@ -51,7 +51,7 @@ export default function TablePagination({
         </div>
 
         <div className="whitespace-nowrap text-sm font-medium">
-          Hal. <span className="font-mono tabular-nums">{page}</span> / <span className="font-mono tabular-nums">{pageCount}</span>
+          Hal. <span className="tabular-nums tabular-nums">{page}</span> / <span className="tabular-nums tabular-nums">{pageCount}</span>
         </div>
 
         <div className="flex items-center gap-1">

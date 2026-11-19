@@ -8,9 +8,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-        display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+        display: ['var(--font-inter)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -251,78 +251,103 @@ function MoveDialog({ type, state, onClose, onSaved }) {
 }
 
 /* ---------------- Dialog detail (riwayat mutasi per item) ---------------- */
-function DetailDialog({ type, item, onClose, onEdit, onDelete, version }) {
-  const open = !!item;
+/** Isi detail item: ringkasan stok + riwayat mutasi bergaya timeline (dipakai panel samping & dialog). */
+function DetailBody({ type, item, version, onEdit, onDelete, compact = false }) {
   const { data, isLoading } = useQuery({
     queryKey: ["stock-item", type, item?.id, version],
     queryFn: async () => (await api.get(`/${type}/items/${item.id}`)).data,
-    enabled: open,
+    enabled: !!item,
   });
   const muts = data?.mutations || [];
-  const it = data?.item || item;
+  const it = { ...item, ...(data?.item || {}) };
+  const masukTotal = muts.filter((m) => m.jenis_transaksi === "masuk").reduce((a, m) => a + Number(m.jumlah || 0), 0);
+  const keluarTotal = muts.filter((m) => m.jenis_transaksi === "keluar").reduce((a, m) => a + Number(m.jumlah || 0), 0);
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl" data-testid="detail-dialog">
-        <DialogHeader>
-          <DialogTitle>Detail Mutasi · {it?.label}</DialogTitle>
-          <DialogDescription>
-            Stok sekarang <b>{formatNumber(it?.stock, 2)} {it?.satuan}</b> · {muts.length} mutasi.
-            Item dibuat oleh {it?.created_by_name || "-"} ({fmtDateTime(it?.created_at)}).
-            {priceText(it) && <> Harga: <b>{priceText(it)}</b>.</>}
-            {it?.keterangan && <> Keterangan: <i>{it.keterangan}</i>.</>}
-          </DialogDescription>
-        </DialogHeader>
-        {isLoading ? <TableSkeleton columns={4} rows={4} /> : muts.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Belum ada mutasi untuk item ini.</p>
-        ) : (
-          <ul className="space-y-2">
-            {muts.map((m) => {
-              const masuk = m.jenis_transaksi === "masuk";
-              const hist = m.history?.length ? m.history : [{ action: "buat", by_name: m.created_by_name || m.pic_name, at: m.created_at, changes: {} }];
-              return (
-                <li key={m.id} className="rounded-lg border p-3" data-testid={`detail-mut-${m.id}`}>
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-semibold ${masuk ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400"}`}>
-                          {masuk ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}
-                          {masuk ? "Masuk" : "Keluar"}
-                        </span>
-                        <span className="font-semibold [font-variant-numeric:tabular-nums]">{masuk ? "+" : "−"}{formatNumber(m.jumlah, 2)} {it?.satuan}</span>
-                        <span className="text-sm text-muted-foreground">{fmtDate(m.date)} {m.time || ""}</span>
-                      </div>
-                      <div className="mt-1 text-sm">
-                        {masuk && <>Supplier: <b>{m.supplier || "-"}</b>{m.nama_cetakan ? " · " : ""}</>}
-                        {(m.nama_cetakan || !masuk) && <>Nama Cetakan: <b>{m.nama_cetakan || "-"}</b></>}
-                        {m.awal && <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">stok awal</span>}
-                        {m.keterangan ? <span className="text-muted-foreground"> · {m.keterangan}</span> : null}
-                      </div>
-                    </div>
-                    <div className="flex gap-0.5">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" title="Ubah" onClick={() => onEdit(m)} data-testid={`edit-mut-${m.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-destructive" title="Hapus" onClick={() => onDelete(m)} data-testid={`delete-mut-${m.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
+    <div className="flex flex-col">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg bg-secondary px-2.5 py-2"><div className="text-[11px] text-muted-foreground">Stok</div><div className="text-[17px] font-bold tabular-nums">{formatNumber(it.stock, 2)}</div></div>
+        <div className="rounded-lg bg-emerald-500/10 px-2.5 py-2"><div className="text-[11px] text-emerald-700 dark:text-emerald-400">Masuk</div><div className="text-[17px] font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatNumber(masukTotal, 2)}</div></div>
+        <div className="rounded-lg bg-rose-500/10 px-2.5 py-2"><div className="text-[11px] text-rose-700 dark:text-rose-400">Keluar</div><div className="text-[17px] font-bold tabular-nums text-rose-700 dark:text-rose-400">{formatNumber(keluarTotal, 2)}</div></div>
+      </div>
+      <div className="mt-2.5 space-y-0.5 text-xs text-foreground/75">
+        {priceText(it) && <div>Harga {priceText(it)}</div>}
+        {(it.suppliers || []).length > 0 && <div>Supplier {(it.suppliers || []).join(", ")}</div>}
+        {it.keterangan && <div className="italic">{it.keterangan}</div>}
+        <div className="text-muted-foreground">Item dibuat oleh {it.created_by_name || "-"} · {fmtDateTime(it.created_at)}</div>
+      </div>
+      <div className="my-4 h-px bg-border/70" />
+      <div className="text-xs font-semibold tracking-[0.05em] text-muted-foreground">RIWAYAT · {muts.length} MUTASI</div>
+      {isLoading ? <div className="mt-3"><TableSkeleton columns={2} rows={3} /></div> : muts.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">Belum ada mutasi untuk item ini.</p>
+      ) : (
+        <ol className={`mt-3 flex flex-col gap-3.5 ${compact ? "" : ""}`}>
+          {muts.map((m) => {
+            const masuk = m.jenis_transaksi === "masuk";
+            const hist = m.history?.length ? m.history : [{ action: "buat", by_name: m.created_by_name || m.pic_name, at: m.created_at, changes: {} }];
+            const sub = [masuk ? m.supplier : "", m.nama_cetakan, m.keterangan].filter(Boolean).join(" · ");
+            return (
+              <li key={m.id} className="group flex gap-3" data-testid={`detail-mut-${m.id}`}>
+                <span className={`grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full ${masuk ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-rose-500/10 text-rose-700 dark:text-rose-400"}`}>
+                  {masuk ? <ArrowDownToLine className="h-3.5 w-3.5" /> : <ArrowUpFromLine className="h-3.5 w-3.5" />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <b className="text-[13px]">{masuk ? "Masuk" : "Keluar"} {formatNumber(m.jumlah, 2)} {it.satuan}
+                      {m.awal && <span className="ml-1.5 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">stok awal</span>}
+                    </b>
+                    <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground">{fmtDate(m.date)} {m.time || ""}</span>
                   </div>
-                  <ol className="mt-2 space-y-1 border-l-2 border-muted pl-3 text-xs text-muted-foreground">
+                  {sub && <div className="text-xs text-foreground/75">{sub}</div>}
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground">
                     {hist.map((h, i) => (
-                      <li key={i}>
-                        <span className="font-medium text-foreground">{h.action === "buat" ? "Dibuat" : "Diubah"}</span>
-                        {" oleh "}<span className="font-medium text-foreground">{h.by_name || "-"}</span>
-                        {" · "}{fmtDateTime(h.at)}
+                      <div key={i}>
+                        {h.action === "buat" ? "Dibuat" : "Diubah"} oleh <span className="font-medium text-foreground/80">{h.by_name || "-"}</span> · {fmtDateTime(h.at)}
                         {h.changes && Object.keys(h.changes).length > 0 && (
-                          <span>{" — "}{Object.entries(h.changes).map(([k, [a, b]]) => `${FIELD_LABEL[k] || k}: ${showVal(k, a)} → ${showVal(k, b)}`).join("; ")}</span>
+                          <> ({Object.entries(h.changes).map(([k, [a, b]]) => `${FIELD_LABEL[k] || k} ${showVal(k, a)} → ${showVal(k, b)}`).join("; ")})</>
                         )}
-                      </li>
+                      </div>
                     ))}
-                  </ol>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                  </div>
+                  <div className="mt-1 flex gap-1">
+                    <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" onClick={() => onEdit(m)} data-testid={`edit-mut-${m.id}`}><Pencil className="h-3 w-3" /> Ubah</Button>
+                    <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs hover:text-destructive" onClick={() => onDelete(m)} data-testid={`delete-mut-${m.id}`}><Trash2 className="h-3 w-3" /> Hapus</Button>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+/** Dialog detail (layar kecil). */
+function DetailDialog({ type, item, onClose, onEdit, onDelete, version }) {
+  return (
+    <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" data-testid="detail-dialog">
+        <DialogHeader>
+          <DialogTitle>{item?.label}</DialogTitle>
+          <DialogDescription>Detail item & riwayat mutasi</DialogDescription>
+        </DialogHeader>
+        {item && <DetailBody type={type} item={item} version={version} onEdit={onEdit} onDelete={onDelete} compact />}
       </DialogContent>
     </Dialog>
   );
+}
+
+/** true bila layar ≥ lebar tertentu (panel detail di samping). */
+function useWide(px = 1180) {
+  const get = () => (typeof window !== "undefined" ? window.matchMedia(`(min-width: ${px}px)`).matches : true);
+  const [wide, setWide] = useState(get);
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${px}px)`);
+    const fn = () => setWide(mq.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, [px]);
+  return wide;
 }
 
 /* ---------------- Halaman ---------------- */
@@ -331,7 +356,10 @@ export default function MutationsPage({ type }) {
   const [search, setSearch] = useState("");
   const [itemDlg, setItemDlg] = useState({ open: false, item: null });
   const [move, setMove] = useState(null);
-  const [detail, setDetail] = useState(null);
+  const [detail, setDetail] = useState(null);       // dialog (layar kecil)
+  const [selectedId, setSelectedId] = useState(null); // panel samping (layar lebar)
+  const [chip, setChip] = useState("all");
+  const wide = useWide();
   const [version, setVersion] = useState(0);
   const [delItem, setDelItem] = useState(null);
   const [delMut, setDelMut] = useState(null);
@@ -351,11 +379,24 @@ export default function MutationsPage({ type }) {
     setVersion((v) => v + 1);
   };
 
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+  const counts = useMemo(() => ({
+    all: items.length,
+    empty: items.filter((it) => Number(it.stock) <= 0).length,
+    today: items.filter((it) => String(it.last_mutation || "").startsWith(today)).length,
+  }), [items, today]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((it) => `${it.label} ${it.satuan}`.toLowerCase().includes(q));
-  }, [items, search]);
+    let list = items;
+    if (chip === "empty") list = list.filter((it) => Number(it.stock) <= 0);
+    if (chip === "today") list = list.filter((it) => String(it.last_mutation || "").startsWith(today));
+    if (!q) return list;
+    return list.filter((it) => `${it.label} ${it.satuan} ${(it.suppliers || []).join(" ")} ${it.keterangan || ""}`.toLowerCase().includes(q));
+  }, [items, search, chip, today]);
+
+  const selected = items.find((x) => x.id === selectedId) || (wide ? filtered[0] : null) || null;
+  const openDetail = (it) => { if (wide) setSelectedId(it.id); else setDetail(it); };
 
   // Item di dialog detail ikut diperbarui setelah simpan
   const liveItem = (it) => items.find((x) => x.id === it?.id) || it;
@@ -387,100 +428,126 @@ export default function MutationsPage({ type }) {
     } catch (e) { toast.error(apiError(e, "Gagal mengunduh PDF")); }
   };
 
+  const nameOf = (it) => (type === "paper" ? it.jenis_kertas : type === "ink" ? it.jenis_tinta : it.nama_barang);
+  const specOf = (it) => (type === "paper" ? `${formatNumber(it.gramatur, 2)} gr · ${formatNumber(it.panjang, 2)} × ${formatNumber(it.lebar, 2)} cm` : "");
+  const CHIPS = [["all", "Semua", counts.all], ["empty", "Stok habis", counts.empty], ["today", "Ada mutasi hari ini", counts.today]];
+
   return (
     <PageContainer
-      fillHeight
       testid={`mutations-page-${type}`}
+      pageEyebrow={`Stok · ${TITLES[type]}`}
       pageTitle={`Mutasi ${TITLES[type]}`}
-      pageDescription="Klik panah hijau untuk stok masuk, panah merah untuk stok keluar. Ikon riwayat menampilkan detail mutasi."
       pageHeaderAction={(
         <>
-          <Button variant="outline" className="gap-2" data-testid="download-pdf-button" onClick={() => setPdfOpen(true)}><FileDown className="h-4 w-4" /> PDF</Button>
-          <Button className="gap-2" data-testid="add-item-button" onClick={() => setItemDlg({ open: true, item: null })}><Plus className="h-4 w-4" /> Item</Button>
+          <Button variant="outline" className="gap-2" data-testid="download-pdf-button" onClick={() => setPdfOpen(true)}><FileDown className="h-4 w-4" /> Unduh PDF</Button>
+          <Button className="gap-2" data-testid="add-item-button" onClick={() => setItemDlg({ open: true, item: null })}><Plus className="h-4 w-4" /> Tambah Item</Button>
         </>
       )}
     >
-      <Card className="p-3 md:shrink-0">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-8" value={search} data-testid="search-input" placeholder={`Cari item ${TITLES[type].toLowerCase()}…`} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-      </Card>
-
-      <Card className="flex flex-col overflow-hidden md:min-h-0 md:flex-1">
-        {isLoading ? <TableSkeleton columns={5} rows={5} /> : (
-          <div className="max-h-[65vh] overflow-auto md:max-h-none md:min-h-0 md:flex-1">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Satuan</TableHead>
-                  <TableHead className="text-right">Stok</TableHead>
-                  <TableHead className="hidden md:table-cell">Mutasi terakhir</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody data-testid="items-table-body">
-                {filtered.length === 0 && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={5} className="py-6">
-                      <Empty className="py-4">
-                        <EmptyHeader>
-                          <EmptyMedia variant="icon"><Inbox /></EmptyMedia>
-                          <EmptyTitle>{items.length ? "Tidak ada item yang cocok" : "Belum ada item"}</EmptyTitle>
-                          <EmptyDescription>{items.length ? "Ubah kata pencarian." : "Klik tombol \"+ Item\" untuk menambah item pertama."}</EmptyDescription>
-                        </EmptyHeader>
-                      </Empty>
-                    </TableCell>
-                  </TableRow>
-                )}
-                {filtered.map((it) => (
-                  <TableRow key={it.id} data-testid={`item-row-${it.id}`}>
-                    <TableCell>
-                      <div className="font-medium">{it.label}</div>
-                      {priceText(it) && <div className="text-[11px] text-muted-foreground">{priceText(it)}</div>}
-                      {it.keterangan && <div className="text-[11px] italic text-muted-foreground">{it.keterangan}</div>}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{it.satuan}</TableCell>
-                    <TableCell className={`whitespace-nowrap text-right font-semibold [font-variant-numeric:tabular-nums] ${Number(it.stock) <= 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
-                      {formatNumber(it.stock, 2)}
-                    </TableCell>
-                    <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground md:table-cell">
-                      {it.last_mutation ? fmtDate(it.last_mutation) : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-0.5">
-                        <Button variant="ghost" size="icon" title="Mutasi Masuk"
-                          className="h-8 w-8 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:text-emerald-400"
-                          onClick={() => setMove({ item: it, jenis: "masuk" })} data-testid={`masuk-btn-${it.id}`}>
-                          <ArrowDownToLine className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Mutasi Keluar"
-                          className="h-8 w-8 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 hover:text-rose-800 dark:text-rose-400"
-                          onClick={() => setMove({ item: it, jenis: "keluar" })} data-testid={`keluar-btn-${it.id}`}>
-                          <ArrowUpFromLine className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Detail / Riwayat" className="h-8 w-8"
-                          onClick={() => setDetail(it)} data-testid={`detail-btn-${it.id}`}>
-                          <History className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Ubah item" className="h-8 w-8 text-muted-foreground"
-                          onClick={() => setItemDlg({ open: true, item: it })} data-testid={`edit-item-${it.id}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title="Hapus item" className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => setDelItem(it)} data-testid={`delete-item-${it.id}`}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      <div className={`grid items-start gap-4 ${wide ? "grid-cols-[minmax(0,1fr)_360px]" : "grid-cols-1"}`}>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center gap-2.5 p-3.5">
+            <label className="flex h-9 min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground focus-within:border-primary/60">
+              <Search className="h-4 w-4 shrink-0" />
+              <input value={search} data-testid="search-input" onChange={(e) => setSearch(e.target.value)} aria-label="Cari item"
+                placeholder={type === "paper" ? "Cari jenis, gramatur, ukuran, supplier…" : "Cari item atau supplier…"}
+                className="w-full bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground" />
+            </label>
+            {CHIPS.map(([id, label, n]) => (
+              <button key={id} type="button" onClick={() => setChip(id)} aria-pressed={chip === id} data-testid={`chip-${id}`}
+                className={`h-8 rounded-full border px-3 text-[12.5px] font-medium transition-colors ${chip === id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground/80 hover:bg-secondary"}`}>
+                {label} · {n}
+              </button>
+            ))}
           </div>
+          {isLoading ? <TableSkeleton columns={4} rows={5} /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-[13px]">
+                <thead>
+                  <tr className="bg-secondary/50 text-left text-[11.5px] font-semibold text-muted-foreground">
+                    <th className="border-y border-border px-3.5 py-2.5">Item</th>
+                    <th className="hidden border-y border-border px-3.5 py-2.5 md:table-cell">Supplier</th>
+                    <th className="border-y border-border px-3.5 py-2.5 text-right">Stok</th>
+                    <th className="border-y border-border px-3.5 py-2.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody data-testid="items-table-body">
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                      <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-secondary"><Inbox className="h-5 w-5" /></div>
+                      {items.length ? "Tidak ada item yang cocok." : "Belum ada item. Klik \"Tambah Item\" untuk menambah item pertama."}
+                    </td></tr>
+                  )}
+                  {filtered.map((it) => {
+                    const isSel = wide && selected?.id === it.id;
+                    const low = Number(it.stock) <= 0;
+                    return (
+                      <tr key={it.id} data-testid={`item-row-${it.id}`} onClick={() => wide && setSelectedId(it.id)}
+                        className={`border-b border-border/60 last:border-0 ${wide ? "cursor-pointer" : ""} ${isSel ? "bg-accent/60" : "hover:bg-secondary/40"}`}>
+                        <td className="px-3.5 py-3">
+                          <div className="font-semibold">{nameOf(it)}</div>
+                          {specOf(it) && <div className="text-xs text-muted-foreground">{specOf(it)}</div>}
+                          {priceText(it) && <div className="text-[11px] text-muted-foreground">{priceText(it)}</div>}
+                        </td>
+                        <td className="hidden px-3.5 py-3 text-foreground/75 md:table-cell">{(it.suppliers || []).join(", ") || "–"}</td>
+                        <td className={`whitespace-nowrap px-3.5 py-3 text-right font-bold tabular-nums ${low ? "text-rose-700 dark:text-rose-400" : ""}`}>
+                          {formatNumber(it.stock, 2)} <span className="text-xs font-medium text-muted-foreground">{it.satuan}</span>
+                        </td>
+                        <td className="px-3.5 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" title="Mutasi Masuk" aria-label="Mutasi masuk"
+                              className="h-8 w-8 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:text-emerald-400"
+                              onClick={() => setMove({ item: it, jenis: "masuk" })} data-testid={`masuk-btn-${it.id}`}>
+                              <ArrowDownToLine className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Mutasi Keluar" aria-label="Mutasi keluar"
+                              className="h-8 w-8 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 hover:text-rose-800 dark:text-rose-400"
+                              onClick={() => setMove({ item: it, jenis: "keluar" })} data-testid={`keluar-btn-${it.id}`}>
+                              <ArrowUpFromLine className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" title="Detail / Riwayat" aria-label="Detail" className="h-8 w-8"
+                              onClick={() => openDetail(it)} data-testid={`detail-btn-${it.id}`}>
+                              <History className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Ubah item" aria-label="Ubah item" className="h-8 w-8 text-muted-foreground"
+                              onClick={() => setItemDlg({ open: true, item: it })} data-testid={`edit-item-${it.id}`}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Hapus item" aria-label="Hapus item" className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => setDelItem(it)} data-testid={`delete-item-${it.id}`}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {wide && (
+          <aside className="sticky top-0 rounded-xl border border-border bg-card p-[18px]" aria-label="Detail item" data-testid="detail-panel">
+            {selected ? (
+              <>
+                <div className="mb-3.5">
+                  <div className="text-xs text-muted-foreground">Detail item</div>
+                  <div className="mt-0.5 text-base font-bold leading-snug">{selected.label}</div>
+                </div>
+                <DetailBody type={type} item={selected} version={version}
+                  onEdit={(m) => setMove({ item: liveItem(selected), mutation: m })}
+                  onDelete={(m) => setDelMut(m)} />
+              </>
+            ) : (
+              <p className="py-10 text-center text-sm text-muted-foreground">Pilih item untuk melihat detail & riwayat.</p>
+            )}
+          </aside>
         )}
-      </Card>
+      </div>
 
       <ItemDialog type={type} open={itemDlg.open} item={itemDlg.item}
         onOpenChange={(o) => setItemDlg((s) => ({ ...s, open: o }))} onSaved={reload} />

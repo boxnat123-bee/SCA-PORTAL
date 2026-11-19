@@ -153,7 +153,7 @@ const ChartTooltipContent = React.forwardRef(
                     {itemConfig.label || item.name}
                   </span>
                 </div>
-                <span className="font-mono font-semibold tabular-nums text-foreground">
+                <span className="tabular-nums font-semibold tabular-nums text-foreground">
                   {value}
                 </span>
               </div>

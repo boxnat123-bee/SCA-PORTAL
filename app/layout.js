@@ -1,5 +1,8 @@
-import { GeistSans } from "geist/font/sans";
+import { Inter } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
+
+// Font utama UI baru: Inter (teks & angka, angka tabular).
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 import "@/index.css";
 import "@/App.css";
 
@@ -11,7 +14,7 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#2563eb",
+  themeColor: "#1e3a8a",
 };
 
 export default function RootLayout({ children }) {
@@ -19,7 +22,7 @@ export default function RootLayout({ children }) {
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${inter.variable} ${GeistMono.variable}`}
     >
       <body>
         <noscript>Anda perlu mengaktifkan JavaScript untuk menjalankan aplikasi ini.</noscript>

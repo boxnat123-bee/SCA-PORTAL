@@ -168,7 +168,7 @@ const Warna = ({ s, u, r }) => {
               </Field>
             </div>
             <div className="mt-2 text-right text-xs text-muted-foreground">
-              Subtotal: <span className="font-mono font-semibold text-foreground">{formatRp(r.tintas?.[i]?.subtotal || 0)}</span>
+              Subtotal: <span className="tabular-nums font-semibold text-foreground">{formatRp(r.tintas?.[i]?.subtotal || 0)}</span>
             </div>
           </div>
         ))}

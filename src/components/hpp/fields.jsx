@@ -24,7 +24,7 @@ export const Field = ({ label, unit, children, testid }) => (
 );
 
 const inputCls =
-  "w-full h-11 rounded-md border border-border bg-background px-3 text-right font-mono text-foreground outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:ring-2 focus:ring-primary/25 placeholder:text-muted-foreground/60";
+  "w-full h-11 rounded-md border border-border bg-background px-3 text-right tabular-nums text-foreground outline-none transition-[border-color,box-shadow] duration-200 focus:border-primary focus:ring-2 focus:ring-primary/25 placeholder:text-muted-foreground/60";
 
 export const NumberInput = ({ value, onChange, placeholder, testid }) => {
   const [focused, setFocused] = useState(false);
@@ -51,7 +51,7 @@ export const MoneyField = ({ value, onChange, placeholder, testid }) => (
 export const TextInput = ({ value, onChange, placeholder, testid }) => (
   <input
     data-testid={testid}
-    className={inputCls.replace("text-right font-mono", "text-left")}
+    className={inputCls.replace("text-right tabular-nums", "text-left")}
     value={value ?? ""}
     placeholder={placeholder}
     onChange={(e) => onChange(e.target.value)}
@@ -88,7 +88,7 @@ export const ResultLine = ({ label, value, money = true, digits, strong, testid 
       data-testid={testid}
     >
       <span className={`min-w-0 text-sm ${strong ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{label}</span>
-      <span className={`shrink-0 whitespace-nowrap text-right font-mono ${strong ? "text-base font-semibold text-primary" : "text-sm"}`}>{display}</span>
+      <span className={`shrink-0 whitespace-nowrap text-right tabular-nums ${strong ? "text-base font-semibold text-primary" : "text-sm"}`}>{display}</span>
     </div>
   );
 };
@@ -99,6 +99,6 @@ export const OutputCard = ({ label, value }) => (
       <p className="text-xs font-semibold uppercase tracking-[0.05em] text-primary/80">{label}</p>
       <p className="text-sm text-muted-foreground mt-0.5">Nilai ini masuk ke Total HPP</p>
     </div>
-    <p className="font-mono text-2xl font-semibold text-primary">{formatRp(value)}</p>
+    <p className="tabular-nums text-2xl font-semibold text-primary">{formatRp(value)}</p>
   </div>
 );

@@ -191,11 +191,11 @@ export default function HppCalculator() {
                     <div className="grid sm:grid-cols-2 gap-4 mb-6">
                       <div className="rounded-lg border border-border p-4">
                         <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Subtotal HPP / Pcs</p>
-                        <p className="font-mono text-2xl font-semibold mt-1">{formatRp(res.subtotal)}</p>
+                        <p className="tabular-nums text-2xl font-semibold mt-1">{formatRp(res.subtotal)}</p>
                       </div>
                       <div className="rounded-lg border border-primary/25 bg-primary/[0.06] p-4">
                         <p className="text-xs uppercase tracking-wide text-primary/80 font-semibold">Harga Jual / Pcs</p>
-                        <p className="font-mono text-2xl font-semibold text-primary mt-1">{formatRp(res.final)}</p>
+                        <p className="tabular-nums text-2xl font-semibold text-primary mt-1">{formatRp(res.final)}</p>
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">Klik komponen pada panel kanan untuk membuka & mengubah inputnya. Semua perhitungan langsung otomatis.</p>
@@ -289,7 +289,7 @@ export default function HppCalculator() {
                       <button onClick={(e) => removeCalc(e, c.id)} data-testid={`btn-delete-${c.id}`}
                         className="text-muted-foreground/50 group-hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>
                     </div>
-                    <p className="font-mono text-primary font-semibold mt-2">{formatRp(c.result?.final || 0)} <span className="text-xs text-muted-foreground font-sans">/ pcs</span></p>
+                    <p className="tabular-nums text-primary font-semibold mt-2">{formatRp(c.result?.final || 0)} <span className="text-xs text-muted-foreground font-sans">/ pcs</span></p>
                   </div>
                 ))}
               </div>

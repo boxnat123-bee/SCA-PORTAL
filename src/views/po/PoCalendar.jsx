@@ -18,9 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
  * Pengiriman (Selesai Cetak & Pengiriman) = oranye.
  */
 const CAT = {
-  tunggu: { label: "Tahap 1–4 · Menunggu", pill: "bg-violet-500/15 text-violet-700 border-violet-500/30 dark:text-violet-300", dot: "bg-violet-500" },
-  proses: { label: "Tahap 5–11 · Produksi", pill: "bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-300", dot: "bg-red-500" },
-  kirim: { label: "Pengiriman", pill: "bg-orange-500/15 text-orange-700 border-orange-500/30 dark:text-orange-300", dot: "bg-orange-500" },
+  tunggu: { label: "Tahap 1–4 · menunggu", pill: "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300", dot: "bg-violet-600", bar: "bg-violet-600" },
+  proses: { label: "Tahap 5–11 · produksi", pill: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300", dot: "bg-red-600", bar: "bg-red-600" },
+  kirim: { label: "Pengiriman", pill: "bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300", dot: "bg-orange-600", bar: "bg-orange-600" },
 };
 const catOfStage = (n) => (n === 11 ? "kirim" : stagePos(n) <= 4 ? "tunggu" : "proses");
 const catOfPo = (p) => {
@@ -122,48 +122,47 @@ export default function PoCalendar() {
   return (
     <PageContainer
       testid="po-calendar-page"
+      pageEyebrow={lang === "en" ? "Production" : "Produksi"}
       pageTitle={t("schedule")}
-      pageDescription="Kalender produksi: klik tanggal untuk melihat daftar PO hari itu."
-      pageHeaderAction={(
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToday} data-testid="cal-today">Hari ini</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCursor(new Date(year, month - 1, 1))} data-testid="cal-prev"><ChevronLeft className="h-4 w-4" /></Button>
-          <div className="w-36 text-center font-display font-bold capitalize">{monthName(cursor, lang)}</div>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCursor(new Date(year, month + 1, 1))} data-testid="cal-next"><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-      )}
     >
-      {/* Legenda = juga filter (klik untuk sembunyikan / tampilkan) */}
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        {Object.entries(CAT).map(([k, c]) => (
-          <button key={k} type="button" onClick={() => setHideCat((h) => ({ ...h, [k]: !h[k] }))}
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium transition ${hideCat[k] ? "opacity-40 line-through" : c.pill}`}
-            data-testid={`cal-legend-${k}`}>
-            <span className={`h-2 w-2 rounded-full ${c.dot}`} /> {c.label}
-          </button>
-        ))}
-        <span className="text-muted-foreground">Klik legenda untuk filter.</span>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Bulan sebelumnya" onClick={() => setCursor(new Date(year, month - 1, 1))} data-testid="cal-prev"><ChevronLeft className="h-4 w-4" /></Button>
+          <div className="min-w-[150px] text-center text-base font-bold capitalize">{monthName(cursor, lang)}</div>
+          <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Bulan berikutnya" onClick={() => setCursor(new Date(year, month + 1, 1))} data-testid="cal-next"><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="outline" size="sm" className="h-8 rounded-full" onClick={goToday} data-testid="cal-today">{lang === "en" ? "Today" : "Hari ini"}</Button>
+        </div>
+        {/* Legenda = juga filter (klik untuk sembunyikan / tampilkan) */}
+        <div className="flex flex-wrap items-center gap-4 text-xs text-foreground/80">
+          {Object.entries(CAT).map(([k, c]) => (
+            <button key={k} type="button" onClick={() => setHideCat((h) => ({ ...h, [k]: !h[k] }))} aria-pressed={!hideCat[k]}
+              title="Klik untuk sembunyikan / tampilkan" className={`flex items-center gap-1.5 transition ${hideCat[k] ? "opacity-40 line-through" : ""}`}
+              data-testid={`cal-legend-${k}`}>
+              <span className={`h-2.5 w-2.5 rounded-[3px] ${c.dot}`} /> {c.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Grid bulanan */}
-        <Card className="overflow-hidden p-0">
-          <div className="grid grid-cols-7 border-b bg-muted/40">
-            {weekdays.map((w, i) => <div key={w} className={`py-2 text-center text-[11px] font-semibold uppercase tracking-wide ${i >= 5 ? "text-rose-500/80" : "text-muted-foreground"}`}>{w}</div>)}
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="grid grid-cols-7 border-b border-border bg-secondary/50">
+            {weekdays.map((w, i) => <div key={w} className={`px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] ${i >= 5 ? "text-rose-700 dark:text-rose-400" : "text-muted-foreground"}`}>{w}</div>)}
           </div>
           <div className="grid grid-cols-7">
             {cells.map((date, i) => {
-              const edgeR = (i + 1) % 7 === 0 ? "" : "border-r";
-              if (!date) return <div key={i} className={`min-h-[70px] border-b bg-muted/20 sm:min-h-[112px] ${edgeR}`} />;
+              const edgeR = (i + 1) % 7 === 0 ? "" : "border-r border-border/60";
+              if (!date) return <div key={i} className={`min-h-[70px] border-b border-border/60 bg-secondary/30 sm:min-h-[104px] ${edgeR}`} />;
               const ds = ymd(date);
               const entries = entriesOf(ds);
               const isToday = ds === todayDs;
               const sel = selectedDay === ds;
               return (
                 <button key={i} type="button" data-testid={`cal-day-${ds}`} onClick={() => setSelectedDay(ds)}
-                  className={`group relative flex min-h-[70px] flex-col gap-0.5 border-b p-1 text-left align-top transition-colors sm:min-h-[112px] sm:p-1.5 ${edgeR} ${sel ? "bg-primary/[0.07] ring-2 ring-inset ring-primary/60" : "hover:bg-accent/50"}`}>
+                  className={`group relative flex min-h-[70px] min-w-0 flex-col gap-0.5 border-b border-border/60 p-1 text-left align-top transition-colors sm:min-h-[104px] sm:p-1.5 ${edgeR} ${sel ? "outline outline-2 -outline-offset-2 outline-primary" : "hover:bg-secondary/40"}`}>
                   <div className="flex items-center justify-between">
-                    <span className={`grid h-6 min-w-6 place-items-center rounded-full px-1 text-xs font-semibold ${isToday ? "bg-rose-600 text-white" : ""}`}>{date.getDate()}</span>
+                    <span className={`grid h-6 min-w-6 place-items-center rounded-full px-1 text-xs font-semibold ${isToday ? "bg-primary text-primary-foreground" : ""}`}>{date.getDate()}</span>
                     {entries.length > 0 && <span className="text-[10px] text-muted-foreground sm:hidden">{entries.length}</span>}
                   </div>
                   {/* Mobile: titik warna */}
@@ -171,10 +170,10 @@ export default function PoCalendar() {
                     {entries.slice(0, 6).map((e) => <span key={e.key} className={`h-1.5 w-1.5 rounded-full ${CAT[e.cat].dot}`} />)}
                   </div>
                   {/* Tablet/desktop: label PO ala Notion */}
-                  <div className="hidden min-w-0 flex-col gap-0.5 sm:flex">
+                  <div className="mt-1 hidden min-w-0 flex-col gap-[3px] sm:flex">
                     {entries.slice(0, MAX_PILLS).map((e) => (
                       <span key={e.key} title={`${e.label} · ${e.sub}`}
-                        className={`truncate rounded border px-1 py-px text-[10.5px] font-medium leading-tight ${CAT[e.cat].pill} ${e.kind === "jadwal" ? "border-solid" : "border-dashed"}`}>
+                        className={`truncate rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold leading-tight ${CAT[e.cat].pill} ${e.kind === "jadwal" ? "" : "opacity-80"}`}>
                         {e.kind === "jadwal" ? (e.multi && !e.isStart ? "↳ " : "● ") : ""}{e.label}{e.sub ? ` · ${e.sub}` : ""}
                       </span>
                     ))}
@@ -184,18 +183,18 @@ export default function PoCalendar() {
               );
             })}
           </div>
-        </Card>
+        </div>
 
         {/* Agenda harian */}
-        <Card className="flex flex-col p-0 lg:sticky lg:top-0 lg:max-h-[calc(100vh-180px)]" data-testid="day-detail">
-          <div className="flex items-start justify-between gap-2 border-b p-4">
+        <aside className="flex flex-col rounded-xl border border-border bg-card lg:sticky lg:top-0 lg:max-h-[calc(100vh-180px)]" data-testid="day-detail" aria-label="Agenda">
+          <div className="flex items-start justify-between gap-2 p-[18px] pb-3">
             <div>
-              <div className="flex items-center gap-2 font-display font-bold"><CalendarDays className="h-4 w-4" /> <span className="capitalize">{selectedDay ? dayTitle(selectedDay, lang) : "-"}</span></div>
-              <div className="mt-0.5 text-xs text-muted-foreground">{dayEntries.length} entri · {slash(selectedDay)}</div>
+              <div className="text-xs text-muted-foreground">Agenda · {dayEntries.length} entri</div>
+              <div className="text-base font-bold capitalize">{selectedDay ? dayTitle(selectedDay, lang) : "-"}</div>
             </div>
             <Button size="sm" className="shrink-0 gap-1" onClick={() => openAdd(selectedDay)} data-testid="add-schedule-day"><Plus className="h-4 w-4" /> Jadwal</Button>
           </div>
-          <div className="flex-1 space-y-4 overflow-y-auto p-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-[18px] pb-[18px]">
             {dayEntries.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada PO pada tanggal ini.</p>}
 
             {daySched.length > 0 && (
@@ -203,7 +202,8 @@ export default function PoCalendar() {
                 <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Jadwal tahap</div>
                 <div className="space-y-2">
                   {daySched.map((e) => (
-                    <div key={e.key} className={`flex items-start gap-2 rounded-lg border-l-4 bg-card p-2.5 shadow-sm ring-1 ring-border ${e.cat === "kirim" ? "border-l-orange-500" : e.cat === "proses" ? "border-l-red-500" : "border-l-violet-500"}`}>
+                    <div key={e.key} className="flex items-start gap-3 rounded-[10px] border border-border p-3">
+                      <span className={`w-1 self-stretch rounded ${CAT[e.cat].bar}`} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">{e.label} <span className="font-normal text-muted-foreground">· {e.sched.client_name}</span></div>
                         <div className="text-xs text-muted-foreground">Tahap {stagePos(e.sched.stage_number)}: {stageName(e.sched.stage_number)}</div>
@@ -226,7 +226,9 @@ export default function PoCalendar() {
                 <div className="space-y-2">
                   {dayRuns.map((e) => (
                     <Link key={e.key} to={`/po/pos/${e.po.id}`}
-                      className={`block rounded-lg border-l-4 bg-card p-2.5 shadow-sm ring-1 ring-border transition hover:bg-accent ${e.cat === "kirim" ? "border-l-orange-500" : e.cat === "proses" ? "border-l-red-500" : "border-l-violet-500"}`}>
+                      className="flex gap-3 rounded-[10px] border border-border p-3 transition hover:bg-secondary/50">
+                      <span className={`w-1 self-stretch rounded ${CAT[e.cat].bar}`} />
+                      <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="truncate text-sm font-semibold">{e.label} <span className="font-normal text-muted-foreground">· {e.sub}</span></div>
                         {(e.isStart || e.isEnd) && (
@@ -235,13 +237,14 @@ export default function PoCalendar() {
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">{e.po.computed?.current_stage_name || "-"}</div>
                       <div className="mt-0.5 text-[11px] text-muted-foreground">{slash(e.po.est_start)} → {slash(e.po.est_end)}{e.po.item_type ? ` · ${e.po.item_type}` : ""}</div>
+                      </div>
                     </Link>
                   ))}
                 </div>
               </section>
             )}
           </div>
-        </Card>
+        </aside>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
