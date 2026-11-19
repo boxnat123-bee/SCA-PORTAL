@@ -30,7 +30,7 @@ function summaryLine(ctx, summary) {
   const s = summary || {};
   text(
     ctx,
-    `Total Klien: ${s.total_klien ?? 0}   |   PO Aktif: ${s.total_po_aktif ?? 0}   |   Item Aktif: ${s.total_item_aktif ?? 0}   |   Item Selesai/Ditutup: ${s.total_item_selesai ?? 0}`,
+    `Total Klien: ${s.total_klien ?? 0}   |   PO Aktif: ${s.total_po_aktif ?? 0}   |   Item Ready: ${s.total_item_aktif ?? 0}   |   Item Tidak Ready: ${s.total_item_selesai ?? 0}`,
     { size: 9, color: C.sub },
   );
   ctx.y -= 16;
@@ -41,7 +41,7 @@ export async function buildKlienStockPdf({ summary, kliens, statusFilter }) {
   const ctx = await createDoc({ landscape: true });
   const label =
     statusFilter && statusFilter !== "semua"
-      ? `Status item: ${statusFilter === "aktif" ? "Aktif" : "Selesai/Ditutup"}`
+      ? `Status item: ${statusFilter === "aktif" ? "Ready" : "Tidak Ready"}`
       : "Semua status item";
   docHeader(ctx, "Laporan Stok Klien", label);
   summaryLine(ctx, summary);
@@ -57,7 +57,7 @@ export async function buildKlienStockPdf({ summary, kliens, statusFilter }) {
           it.jenis_item || "-",
           it.satuan || "-",
           fmtQty(it.kuantiti),
-          it.status === "aktif" ? "Aktif" : "Selesai/Ditutup",
+          it.status === "aktif" ? "Ready" : "Tidak Ready",
           it.keterangan || "-",
         ]);
       });

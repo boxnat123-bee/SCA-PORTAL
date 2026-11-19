@@ -24,7 +24,7 @@ export function ItemStatusBadge({ status }) {
       }`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${aktif ? "bg-emerald-500" : "bg-muted-foreground"}`} />
-      {aktif ? "Aktif" : "Selesai/Ditutup"}
+      {aktif ? "Ready" : "Tidak Ready"}
     </span>
   );
 }
@@ -82,7 +82,7 @@ export default function ClientCard({ klien, expanded, onTogglePo, act, selectedI
               <Badge variant="outline" className="font-normal">{po.items.length} item</Badge>
               {po.item_aktif_count > 0 && (
                 <Badge className="bg-emerald-500/15 font-normal text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400">
-                  {po.item_aktif_count} aktif
+                  {po.item_aktif_count} ready
                 </Badge>
               )}
               <div className="ml-auto flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -149,7 +149,7 @@ export default function ClientCard({ klien, expanded, onTogglePo, act, selectedI
                                   <ArrowUpFromLine className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="icon" className={iconBtn}
-                                  title={aktif ? "Tutup Item (Selesai)" : "Aktifkan Kembali"}
+                                  title={aktif ? "Ubah ke Tidak Ready" : "Ubah ke Ready"}
                                   onClick={() => act.toggleStatus(it)}
                                   data-testid={`toggle-status-btn-${it.id}`}>
                                   {aktif ? <CircleCheck className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}

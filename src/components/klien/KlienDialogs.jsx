@@ -260,8 +260,8 @@ export function ItemDialog({ open, onOpenChange, po, item, onSaved }) {
               <Select value={form.status} onValueChange={set("status")}>
                 <SelectTrigger data-testid="item-status-select"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="aktif" data-testid="item-status-aktif">Aktif</SelectItem>
-                  <SelectItem value="selesai" data-testid="item-status-selesai">Selesai/Ditutup</SelectItem>
+                  <SelectItem value="aktif" data-testid="item-status-aktif">Ready</SelectItem>
+                  <SelectItem value="selesai" data-testid="item-status-selesai">Tidak Ready</SelectItem>
                 </SelectContent>
               </Select>
             </div>

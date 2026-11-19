@@ -32,7 +32,7 @@ export const POST = handle(async (req) => {
 
   const item = await getItemOr404(String(body?.item_id ?? ""));
   if (item.status !== "aktif") {
-    throw new HttpError(400, "Item berstatus Selesai/Ditutup. Ubah status ke Aktif untuk melakukan mutasi.");
+    throw new HttpError(400, "Item berstatus Tidak Ready. Ubah status ke Ready untuk melakukan mutasi.");
   }
 
   const delta = jenis === "masuk" ? jumlah : -jumlah;

@@ -63,7 +63,7 @@ export default function KlienDashboard() {
     const next = item.status === "aktif" ? "selesai" : "aktif";
     try {
       await kapi.updateKlienItem(item.id, { status: next });
-      toast.success(next === "aktif" ? "Item diaktifkan kembali" : "Item ditutup (Selesai)");
+      toast.success(next === "aktif" ? "Item diubah ke Ready" : "Item diubah ke Tidak Ready");
       refetch();
     } catch (err) {
       toast.error(apiError(err, "Gagal mengubah status"));
@@ -188,8 +188,8 @@ export default function KlienDashboard() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="semua" data-testid="filter-status-semua">Semua Status</SelectItem>
-            <SelectItem value="aktif" data-testid="filter-status-aktif">Aktif</SelectItem>
-            <SelectItem value="selesai" data-testid="filter-status-selesai">Selesai/Ditutup</SelectItem>
+            <SelectItem value="aktif" data-testid="filter-status-aktif">Ready</SelectItem>
+            <SelectItem value="selesai" data-testid="filter-status-selesai">Tidak Ready</SelectItem>
           </SelectContent>
         </Select>
       </div>
