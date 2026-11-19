@@ -51,8 +51,10 @@ export default function PoDetail() {
   const sd = po.stage_data || {};
   const data = sd[String(active)] || {};
 
-  const updateStage = async (patch) => {
-    try { const updated = await api.updateStage(id, active, patch); setPo(updated); toast.success("Tersimpan"); }
+  // stageNum dikunci saat dipanggil, supaya simpanan tidak "nyasar" ke tahap lain
+  // ketika user berpindah tahap sebelum penyimpanan selesai.
+  const updateStage = async (patch, stageNum = active) => {
+    try { const updated = await api.updateStage(id, stageNum, patch); setPo(updated); toast.success("Tersimpan"); }
     catch (e) { toast.error(e?.response?.data?.detail || "Gagal simpan"); }
   };
 
@@ -102,8 +104,11 @@ export default function PoDetail() {
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-semibold text-white ${done ? "bg-emerald-500" : "bg-blue-500"}`}>{done ? t("done") : t("pending")}</span>
             </div>
-            <StageBody num={active} data={data} po={po} done={done} updateStage={updateStage} reload={load} t={t} />
-            <StageKeterangan value={data.keterangan} onSave={(val) => updateStage({ keterangan: val })} t={t} />
+            {/* key={active}: tiap tahap punya state input sendiri (tidak terbawa ke tahap lain) */}
+            <StageBody key={`body-${active}`} num={active} data={data} po={po} done={done}
+              updateStage={(patch) => updateStage(patch, active)} reload={load} t={t} />
+            <StageKeterangan key={`ket-${active}`} stage={active} value={data.keterangan}
+              onSave={(stageNum, val) => updateStage({ keterangan: val }, stageNum)} t={t} />
           </Card>
 
           <PhotoSection po={po} num={active} reload={load} t={t} />
@@ -129,14 +134,15 @@ function Info({ label, value }) {
   return <div><div className="text-xs text-muted-foreground">{label}</div><div className="font-medium">{value || "-"}</div></div>;
 }
 
-function StageKeterangan({ value, onSave, t }) {
+function StageKeterangan({ stage, value, onSave, t }) {
   const [v, setV] = useState(value || "");
   useEffect(() => { setV(value || ""); }, [value]);
+  // Simpan ke tahap milik kotak ini (bukan tahap yang sedang aktif saat blur terjadi).
   return (
     <div className="mt-5 space-y-2 border-t border-border pt-4">
       <Label>{t("keterangan")}</Label>
       <Textarea data-testid="stage-keterangan" value={v} onChange={(e) => setV(e.target.value)}
-        onBlur={() => { if (v !== (value || "")) onSave(v); }}
+        onBlur={() => { if (v !== (value || "")) onSave(stage, v); }}
         placeholder={t("keteranganPlaceholder")} className="rounded-xl min-h-[70px]" />
     </div>
   );
