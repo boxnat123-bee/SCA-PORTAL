@@ -6,11 +6,6 @@ import { useAuth, apiError } from "@/context/AuthContext";
 import { Card } from "@/components/ui/card";
 import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
@@ -21,8 +16,6 @@ function Inner() {
   const isSuper = user?.role === "superadmin";
   const year = new Date().getFullYear();
   const [steps, setSteps] = useState({ mutations: false, stock: false });
-  const [pwdOpen, setPwdOpen] = useState(false);
-  const [pwd, setPwd] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 

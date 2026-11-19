@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Plus, X, CalendarDays, ArrowUpRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, ArrowUpRight, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import * as api from "@/lib/poApi";
 import { useLang } from "@/context/LangContext";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import PageContainer from "@/components/layout/PageContainer";
 import { sortStages, stagePos } from "@/lib/poStages";
 import { Label } from "@/components/ui/label";

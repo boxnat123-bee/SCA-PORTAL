@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { handle, json, HttpError } from "@/server/http";
 import { requireAuth } from "@/server/auth";
 import { getDb, COL, nowIso } from "@/server/mongo";

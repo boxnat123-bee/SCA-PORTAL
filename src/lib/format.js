@@ -84,5 +84,4 @@ export const ID_MONTHS = [
 
 // Label jenis transaksi. Kunci HARUS sama dengan nilai yang dipakai backend
 // (lihat src/server/format.js): masuk | keluar | retur.
-export const TRX_LABEL = { masuk: "Masuk", keluar: "Keluar", retur: "Retur/Sisa" };
 

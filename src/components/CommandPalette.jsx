@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
   Users, CalendarX, Calculator, ListTodo, CalendarDays, Search, Moon, Sun, LogOut,
-  Boxes, History, Receipt, PieChart,
+  Boxes, Receipt, PieChart,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 

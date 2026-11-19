@@ -28,4 +28,3 @@ export function formatDateSlash(iso) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso ? String(iso) : "-");
 }
 
-export const TRX_LABEL = { masuk: "Masuk", keluar: "Keluar" };

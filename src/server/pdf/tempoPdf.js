@@ -1,6 +1,6 @@
 /** PDF Jatuh Tempo Klien — pdf-lib via core.js (konsisten dengan modul lain). */
 import {
-  createDoc, docHeader, section, drawTable, text, barChart, C, finish, ensure, newPage, summaryCards,
+  createDoc, docHeader, section, drawTable, text, barChart, C, finish, newPage, summaryCards,
 } from "@/server/pdf/core";
 
 const rp = (v) => "Rp " + new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number(v) || 0);
