@@ -41,14 +41,6 @@ export default function Login() {
             <Logo size={48} />
             <span className="font-display text-2xl font-extrabold tracking-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>SCA PORTAL</span>
           </div>
-          <div className="stagger-in" style={{ animationDelay: "80ms" }}>
-            <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight lg:text-5xl" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.65)" }}>
-              Portal Terpadu Percetakan SCA
-            </h1>
-            <p className="mt-3 max-w-md text-base text-zinc-100 lg:text-lg" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.6)" }}>
-              Laporan Stok, Tracking PO, Stok Klien, Jatuh Tempo Klien, dan Kalkulator HPP — dalam satu aplikasi.
-            </p>
-          </div>
         </div>
       </div>
 
@@ -66,7 +58,7 @@ export default function Login() {
             <div className="space-y-1.5">
               <Label htmlFor="username">Nama User</Label>
               <Input id="username" data-testid="login-username" value={username}
-                onChange={(e) => setUsername(e.target.value)} placeholder="cth: Jeffsca" autoFocus />
+                onChange={(e) => setUsername(e.target.value)} placeholder="cth: Budi123" autoFocus />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>

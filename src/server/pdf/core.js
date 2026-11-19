@@ -117,56 +117,83 @@ export function section(ctx, title) {
  * Tabel dengan header berulang tiap halaman.
  * weights: array bobot lebar kolom (relatif). rightCols: index kolom rata kanan.
  */
-export function drawTable(ctx, header, rows, { weights, rightCols = [], fontSize = 8 } = {}) {
+/** Pecah teks menjadi beberapa baris agar muat di lebar kolom. */
+export function wrapLines(ctx, str, maxWidth, size = 8, bold = false) {
+  const words = sanitize(String(str ?? "")).split(/\s+/).filter(Boolean);
+  if (!words.length) return [""];
+  const lines = [];
+  let line = "";
+  for (let w of words) {
+    while (widthOf(ctx, w, size, bold) > maxWidth && w.length > 1) {
+      let cut = w.length - 1;
+      while (cut > 1 && widthOf(ctx, w.slice(0, cut), size, bold) > maxWidth) cut--;
+      if (line) { lines.push(line); line = ""; }
+      lines.push(w.slice(0, cut));
+      w = w.slice(cut);
+    }
+    const t = line ? `${line} ${w}` : w;
+    if (line && widthOf(ctx, t, size, bold) > maxWidth) { lines.push(line); line = w; } else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * Tabel PDF. Default: teks yang kepanjangan dipotong (…).
+ * wrap: true → teks dibungkus ke baris berikutnya & tinggi baris menyesuaikan (tidak terpotong).
+ */
+export function drawTable(ctx, header, rows, { weights, rightCols = [], fontSize = 8, wrap = false } = {}) {
   const total = contentWidth(ctx);
   const w = weights && weights.length === header.length ? weights : header.map(() => 1);
   const sumW = w.reduce((a, b) => a + b, 0);
   const widths = w.map((x) => (x / sumW) * total);
-  const rowH = fontSize + 9;
+  const baseH = fontSize + 9;
+  const lineH = fontSize + 2.5;
   const pad = 4;
 
+  const layout = (cells, isHeader) => cells.map((cell, i) => {
+    const raw = cell === null || cell === undefined || cell === "" ? "" : String(cell);
+    if (!wrap) return [truncate(ctx, raw, widths[i] - pad * 2, fontSize, isHeader)];
+    return wrapLines(ctx, raw, widths[i] - pad * 2, fontSize, isHeader);
+  });
+  const heightOf = (lines) => Math.max(baseH, Math.max(...lines.map((l) => l.length)) * lineH + 6.5);
+
   const drawRow = (cells, { isHeader = false, zebra = false } = {}) => {
+    const lines = layout(cells, isHeader);
+    const rowH = heightOf(lines);
+    if (ensure(ctx, rowH) && !isHeader) drawRow(header, { isHeader: true });
     const yTop = ctx.y;
     const yBot = yTop - rowH;
     if (isHeader) {
-      ctx.page.drawRectangle({
-        x: ctx.margin, y: yBot, width: total, height: rowH, color: C.header,
-      });
+      ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: rowH, color: C.header });
     } else if (zebra) {
-      ctx.page.drawRectangle({
-        x: ctx.margin, y: yBot, width: total, height: rowH, color: C.light,
-      });
+      ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: rowH, color: C.light });
     }
     let x = ctx.margin;
-    cells.forEach((cell, i) => {
+    lines.forEach((cellLines, i) => {
       const cw = widths[i];
-      ctx.page.drawRectangle({
-        x, y: yBot, width: cw, height: rowH,
-        borderColor: C.border, borderWidth: 0.5,
-      });
-      const raw = cell === null || cell === undefined || cell === "" ? "" : String(cell);
-      const label = truncate(ctx, raw, cw - pad * 2, fontSize, isHeader);
-      const tw = widthOf(ctx, label, fontSize, isHeader);
-      const tx = rightCols.includes(i) && !isHeader ? x + cw - pad - tw : x + pad;
-      ctx.page.drawText(label, {
-        x: tx,
-        y: yBot + (rowH - fontSize) / 2 + 1.5,
-        size: fontSize,
-        font: isHeader ? ctx.bold : ctx.font,
-        color: isHeader ? C.white : C.text,
+      ctx.page.drawRectangle({ x, y: yBot, width: cw, height: rowH, borderColor: C.border, borderWidth: 0.5 });
+      cellLines.forEach((label, li) => {
+        const tw = widthOf(ctx, label, fontSize, isHeader);
+        const tx = rightCols.includes(i) && !isHeader ? x + cw - pad - tw : x + pad;
+        const ty = wrap
+          ? yTop - 4 - fontSize - li * lineH + 1.5
+          : yBot + (rowH - fontSize) / 2 + 1.5;
+        ctx.page.drawText(label, {
+          x: tx, y: ty, size: fontSize,
+          font: isHeader ? ctx.bold : ctx.font,
+          color: isHeader ? C.white : C.text,
+        });
       });
       x += cw;
     });
     ctx.y = yBot;
   };
 
-  ensure(ctx, rowH * 2);
+  ensure(ctx, baseH * 2);
   drawRow(header, { isHeader: true });
   const data = rows.length ? rows : [header.map(() => "-")];
-  data.forEach((r, idx) => {
-    if (ensure(ctx, rowH)) drawRow(header, { isHeader: true });
-    drawRow(r, { zebra: idx % 2 === 1 });
-  });
+  data.forEach((r, idx) => drawRow(r, { zebra: idx % 2 === 1 }));
   ctx.y -= 10;
 }
 

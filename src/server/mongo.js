@@ -36,6 +36,8 @@ export const COL = {
   paper: "paper_mutations",
   ink: "ink_mutations",
   other: "other_mutations",
+  // Master item stok SCA (kertas/tinta/lain), field `type` = paper|ink|other
+  stockItems: "stock_items",
   // HPP Calculator
   hppCalcs: "hpp_calculations",
   // PO Tracker

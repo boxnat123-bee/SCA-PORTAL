@@ -54,7 +54,12 @@ export const POST = handle(async (req) => {
     tanggal: body?.tanggal || nowIso(),
     keterangan: String(body?.keterangan ?? ""),
     pic_name: current.name || current.username,
+    created_by: current.id,
+    created_by_name: current.name || current.username,
     created_at: nowIso(),
+    updated_at: null,
+    updated_by_name: null,
+    history: [{ action: "buat", by_id: current.id, by_name: current.name || current.username, at: nowIso(), changes: {} }],
   };
   await db.collection(COL.klienMutations).insertOne({ ...doc });
   await db.collection(COL.klienItems).updateOne({ id: item.id }, { $set: { kuantiti: newQty } });

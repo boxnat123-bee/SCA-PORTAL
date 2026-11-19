@@ -24,7 +24,7 @@ export default function PoForm() {
     po_number: "", client_name: "", item_type: "", material: "", paper_size: "",
     size_single_face: "", size_kres_cetak: "", size_kres_pisau: "",
     quantity: "", po_date: "", est_start: "", est_end: "", print_machine: "",
-    enabled_stages: [1, 4, 5, 6, 10, 11], notes: "",
+    enabled_stages: [] /* PO baru: tidak ada tahap terpilih otomatis */, notes: "",
   });
   const [conflicts, setConflicts] = useState([]);
   const [saving, setSaving] = useState(false);

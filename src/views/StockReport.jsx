@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileDown, Filter, Inbox, Search, X, SearchX } from "lucide-react";
+import { FileDown, Inbox, Search, X, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
@@ -22,7 +22,7 @@ import PageContainer from "@/components/layout/PageContainer";
 // Angka dibandingkan dengan titik maupun koma (65.5 = 65,5), dan "x" pada ukuran boleh pakai spasi.
 const norm = (v) => String(v ?? "").toLowerCase().replace(/,/g, ".").replace(/\s*[x×]\s*/g, "x");
 const matchAll = (hay, tokens) => tokens.every((t) => hay.includes(t));
-const supplierText = (item) => (item.suppliers || []).map((s) => s.supplier).join(" ");
+const supplierText = () => "";
 
 const CATEGORIES = [
   { value: "all", label: "Semua Stok" },
@@ -48,7 +48,7 @@ function NoMatch({ colSpan, q }) {
 }
 
 export default function StockReport() {
-  const [fSupplier, setFSupplier] = useState("all");
+  const fSupplier = "all"; // filter supplier dihapus (stok per item)
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const tokens = useMemo(() => norm(query).split(/\s+/).filter(Boolean), [query]);
@@ -68,15 +68,7 @@ export default function StockReport() {
     catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); }
   };
 
-  const suppliers = useMemo(() => {
-    const set = new Set();
-    (data?.paper || []).forEach((p) => (p.suppliers || []).forEach((s) => set.add(s.supplier)));
-    (data?.ink || []).forEach((p) => (p.suppliers || []).forEach((s) => set.add(s.supplier)));
-    (data?.other || []).forEach((p) => (p.suppliers || []).forEach((s) => set.add(s.supplier)));
-    return Array.from(set).sort();
-  }, [data]);
-
-  const supStock = (item, sup) => (item.suppliers || []).find((s) => s.supplier === sup)?.stock || 0;
+  const supStock = (item) => item.stock || 0;
   const filtered = fSupplier !== "all";
 
   const paperRows = useMemo(() => {
@@ -113,14 +105,12 @@ export default function StockReport() {
   const paperTotal = useMemo(() => filtered ? paperRows.filter(isRim).reduce((a, p) => a + supStock(p, fSupplier), 0) : (data?.paper || []).filter(isRim).reduce((a, p) => a + Math.max(p.stock, 0), 0), [paperRows, fSupplier, filtered, data]);
   const inkTotal = useMemo(() => filtered ? inkRows.reduce((a, p) => a + supStock(p, fSupplier), 0) : (data?.ink || []).reduce((a, p) => a + Math.max(p.stock, 0), 0), [inkRows, fSupplier, filtered, data]);
 
-  const badges = (item) => {
-    const list = filtered ? (item.suppliers || []).filter((s) => s.supplier === fSupplier) : (item.suppliers || []);
-    return list.length ? list.map((s, j) => (
-      <span key={j} className="whitespace-nowrap rounded bg-secondary px-1.5 py-0.5 text-[11px]">
-        {s.supplier}: <b>{formatNumber(s.stock, 2)}</b>
-      </span>
-    )) : <span className="text-xs text-muted-foreground">-</span>;
-  };
+  const badges = (item) => (
+    <>
+      <span className="whitespace-nowrap rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-400">Masuk: <b>{formatNumber(item.total_masuk, 2)}</b></span>
+      <span className="whitespace-nowrap rounded bg-rose-500/10 px-1.5 py-0.5 text-[11px] text-rose-700 dark:text-rose-400">Keluar: <b>{formatNumber(item.total_keluar, 2)}</b></span>
+    </>
+  );
 
   return (
     <PageContainer
@@ -170,33 +160,11 @@ export default function StockReport() {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-full space-y-1.5 sm:w-auto">
-            <Label className="flex items-center gap-1.5 text-xs"><Filter className="h-3.5 w-3.5" /> Filter Supplier</Label>
-            <Select value={fSupplier} onValueChange={setFSupplier}>
-              <SelectTrigger className="w-full sm:w-[220px]" data-testid="filter-supplier-stock"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Supplier</SelectItem>
-                {suppliers.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
           {searching && (
             <p className="w-full text-xs text-muted-foreground" data-testid="stock-search-summary">
               Hasil “{query.trim()}”:{" "}
               {[show("paper") && `${paperRows.length} kertas`, show("ink") && `${inkRows.length} tinta`, show("other") && `${otherRows.length} barang lain`].filter(Boolean).join(" • ")}
             </p>
-          )}
-          {filtered && (
-            <div className="flex w-full flex-wrap gap-4 sm:w-auto" data-testid="supplier-summary">
-              <div className="rounded-md border border-border px-4 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Stok Kertas • {fSupplier}</div>
-                <div className="font-display text-xl font-bold">{formatNumber(paperTotal, 2)} Rim</div>
-              </div>
-              <div className="rounded-md border border-border px-4 py-2">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Stok Tinta • {fSupplier}</div>
-                <div className="font-display text-xl font-bold">{formatNumber(inkTotal, 2)} Kg</div>
-              </div>
-            </div>
           )}
         </div>
       </Card>
@@ -211,8 +179,8 @@ export default function StockReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Jenis</TableHead><TableHead>Gramatur</TableHead>
-                  <TableHead>Ukuran</TableHead><TableHead>{filtered ? "Stok Supplier" : "Per Supplier"}</TableHead>
-                  <TableHead className="text-right">{filtered ? "Stok Supplier" : "Total Stok"}</TableHead>
+                  <TableHead>Ukuran</TableHead><TableHead>Masuk / Keluar</TableHead>
+                  <TableHead className="text-right">Stok</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody data-testid="paper-stock-table">
@@ -224,7 +192,7 @@ export default function StockReport() {
                     <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} {p.satuan || "Rim"}</TableCell>
                   </TableRow>
-                )) : searching ? <NoMatch colSpan={5} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Data muncul setelah ada mutasi masuk.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+                )) : searching ? <NoMatch colSpan={5} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -237,7 +205,7 @@ export default function StockReport() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Jenis Tinta</TableHead><TableHead>{filtered ? "Stok Supplier" : "Per Supplier"}</TableHead><TableHead className="text-right">{filtered ? "Stok Supplier" : "Total Stok"}</TableHead></TableRow>
+                <TableRow><TableHead>Jenis Tinta</TableHead><TableHead>Masuk / Keluar</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
               </TableHeader>
               <TableBody data-testid="ink-stock-table">
                 {inkRows.length ? inkRows.map((p, i) => (
@@ -246,7 +214,7 @@ export default function StockReport() {
                     <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} Kg</TableCell>
                   </TableRow>
-                )) : searching ? <NoMatch colSpan={3} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={3} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Data muncul setelah ada mutasi masuk.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+                )) : searching ? <NoMatch colSpan={3} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={3} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -260,7 +228,7 @@ export default function StockReport() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow><TableHead>Nama Barang</TableHead><TableHead>Satuan</TableHead><TableHead>{filtered ? "Stok Supplier" : "Per Supplier"}</TableHead><TableHead className="text-right">{filtered ? "Stok Supplier" : "Total Stok"}</TableHead></TableRow>
+              <TableRow><TableHead>Nama Barang</TableHead><TableHead>Satuan</TableHead><TableHead>Masuk / Keluar</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
             </TableHeader>
             <TableBody data-testid="other-stock-table">
               {otherRows.length ? otherRows.map((p, i) => (
@@ -270,7 +238,7 @@ export default function StockReport() {
                   <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
                   <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} {p.satuan || ""}</TableCell>
                 </TableRow>
-              )) : searching ? <NoMatch colSpan={4} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Data muncul setelah ada mutasi masuk.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+              )) : searching ? <NoMatch colSpan={4} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

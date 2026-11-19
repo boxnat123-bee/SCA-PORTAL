@@ -1,6 +1,6 @@
 import {
   Building2, ChevronDown, ChevronRight, Plus, Pencil, Trash2,
-  ArrowDownToLine, ArrowUpFromLine, CircleCheck, ArchiveRestore, PackageOpen,
+  ArrowDownToLine, ArrowUpFromLine, CircleCheck, History, ArchiveRestore, PackageOpen,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -145,6 +145,10 @@ export default function ClientCard({ klien, expanded, onTogglePo, act }) {
                                   onClick={() => act.mutasi(it, po, klien, "keluar")}
                                   data-testid={`mutasi-keluar-btn-${it.id}`}>
                                   <ArrowUpFromLine className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className={iconBtn} title="Detail / Riwayat Mutasi"
+                                  onClick={() => act.detail(it, po, klien)} data-testid={`detail-item-btn-${it.id}`}>
+                                  <History className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="icon" className={iconBtn}
                                   title={aktif ? "Tutup Item (Selesai)" : "Aktifkan Kembali"}

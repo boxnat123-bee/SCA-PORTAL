@@ -18,7 +18,6 @@ const PaperMutations = lazy(() => import("@/views/PaperMutations"));
 const InkMutations = lazy(() => import("@/views/InkMutations"));
 const OtherMutations = lazy(() => import("@/views/OtherMutations"));
 const StockReport = lazy(() => import("@/views/StockReport"));
-const DetailReport = lazy(() => import("@/views/DetailReport"));
 const LogsUsers = lazy(() => import("@/views/LogsUsers"));
 const YearClose = lazy(() => import("@/views/YearClose"));
 // HPP
@@ -31,7 +30,6 @@ const PoDetail = lazy(() => import("@/views/po/PoDetail"));
 const PoCalendar = lazy(() => import("@/views/po/PoCalendar"));
 // Stok Klien (tool baru)
 const KlienDashboard = lazy(() => import("@/views/klien/Dashboard"));
-const KlienHistory = lazy(() => import("@/views/klien/History"));
 // Jatuh Tempo Klien (tool baru — Superadmin only)
 const TempoInvoices = lazy(() => import("@/views/tempo/Invoices"));
 const TempoReports = lazy(() => import("@/views/tempo/Reports"));
@@ -72,7 +70,6 @@ function App() {
                     <Route path="stok/tinta" element={<InkMutations />} />
                     <Route path="stok/lainnya" element={<OtherMutations />} />
                     <Route path="stok/laporan-stok" element={<StockReport />} />
-                    <Route path="stok/laporan-detail" element={<RequireSuper><DetailReport /></RequireSuper>} />
                     <Route path="stok/log-user" element={<RequireSuper><LogsUsers /></RequireSuper>} />
                     <Route path="stok/tutup-tahun" element={<RequireSuper><YearClose /></RequireSuper>} />
                     {/* HPP tools — superadmin only */}
@@ -86,7 +83,6 @@ function App() {
                     <Route path="po/kalender" element={<PoCalendar />} />
                     {/* Stok Klien tools — Superadmin + Admin/PIC */}
                     <Route path="stok-klien" element={<KlienDashboard />} />
-                    <Route path="stok-klien/riwayat" element={<KlienHistory />} />
                     {/* Jatuh Tempo Klien tools — Superadmin only */}
                     <Route path="tempo" element={<RequireSuper><TempoInvoices /></RequireSuper>} />
                     <Route path="tempo/laporan" element={<RequireSuper><TempoReports /></RequireSuper>} />
@@ -95,7 +91,7 @@ function App() {
                     <Route path="tinta" element={<Navigate to="/stok/tinta" replace />} />
                     <Route path="lainnya" element={<Navigate to="/stok/lainnya" replace />} />
                     <Route path="laporan-stok" element={<Navigate to="/stok/laporan-stok" replace />} />
-                    <Route path="laporan-detail" element={<Navigate to="/stok/laporan-detail" replace />} />
+                    <Route path="laporan-detail" element={<Navigate to="/stok/laporan-stok" replace />} />
                     <Route path="log-user" element={<Navigate to="/stok/log-user" replace />} />
                     <Route path="tutup-tahun" element={<Navigate to="/stok/tutup-tahun" replace />} />
                   </Route>

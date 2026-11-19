@@ -3,10 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { FileStack, Droplets, Activity, Wallet, ArrowRight } from "lucide-react";
+import { FileStack, Droplets, Activity, Boxes, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import { formatRupiah, formatNumber, formatDateID, TRX_LABEL } from "@/lib/format";
+import { formatNumber, formatDateID, TRX_LABEL } from "@/lib/format";
 import StatCard from "@/components/StatCard";
 import PageContainer from "@/components/layout/PageContainer";
 import ChartBox from "@/components/ChartBox";
@@ -25,12 +24,11 @@ const TREND_CONFIG = {
 };
 
 const trxBadge = (t) => {
-  const map = { masuk: "bg-emerald-500/15 text-emerald-600", keluar: "bg-rose-500/15 text-rose-500", retur: "bg-amber-500/15 text-amber-600" };
+  const map = { masuk: "bg-emerald-500/15 text-emerald-600", keluar: "bg-rose-500/15 text-rose-500", };
   return <span className={`rounded px-2 py-0.5 text-xs font-medium ${map[t]}`}>{TRX_LABEL[t]}</span>;
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
   // Cache react-query: dashboard tampil instan dari cache, refresh di background.
   const { data } = useQuery({
     queryKey: ["dashboard"],
@@ -39,8 +37,6 @@ export default function Dashboard() {
   });
 
   if (!data) return <PageContainer isLoading testid="stok-dashboard-loading" />;
-
-  const isSuper = user?.role === "superadmin";
 
   return (
     <PageContainer
@@ -56,13 +52,9 @@ export default function Dashboard() {
           value={`${formatNumber(data.total_ink_stock)} Kg`} />
         <StatCard testid="card-mutations-today" icon={Activity} accent="sky" label="Mutasi Hari Ini"
           value={`${data.mutations_today} transaksi`} sub="Kertas & tinta" />
-        {isSuper ? (
-          <StatCard testid="card-nominal-total" icon={Wallet} accent="emerald" label="Total Nominal Stok"
-            value={formatRupiah(data.nominal_total)} sub={`Kertas ${formatRupiah(data.nominal_paper)} • Tinta ${formatRupiah(data.nominal_ink)} • Lain ${formatRupiah(data.nominal_other || 0)}`} />
-        ) : (
-          <StatCard testid="card-nominal-hidden" icon={Wallet} accent="emerald" label="Total Nominal Stok"
-            value="Terkunci" sub="Buka via Laporan Detail" />
-        )}
+        <StatCard testid="card-item-count" icon={Boxes} accent="emerald" label="Jumlah Item Stok"
+          value={`${(data.item_counts?.paper || 0) + (data.item_counts?.ink || 0) + (data.item_counts?.other || 0)} item`}
+          sub={`Kertas ${data.item_counts?.paper || 0} • Tinta ${data.item_counts?.ink || 0} • Lain ${data.item_counts?.other || 0}`} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ArrowDownToLine, ArrowUpFromLine, Pencil, Trash2 } from "lucide-react";
 
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -445,5 +446,106 @@ export function ConfirmDeleteDialog({ open, onOpenChange, title, description, on
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+/* --------------------------- Detail mutasi item --------------------------- */
+const KFIELD = { jenis: "Jenis", jumlah: "Jumlah", tanggal: "Tanggal", keterangan: "Keterangan" };
+const fmtDT = (v) => {
+  if (!v) return "-";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return String(v);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+const kShow = (f, v) => {
+  if (v === "" || v === null || v === undefined) return "(kosong)";
+  if (f === "tanggal") return fmtDT(v);
+  if (f === "jenis") return v === "masuk" ? "Masuk" : "Keluar";
+  if (f === "jumlah") return fmtQty(v);
+  return String(v);
+};
+
+export function KlienDetailDialog({ open, onOpenChange, item, po, klien, onChanged }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!item?.id) return;
+    setLoading(true);
+    try { setRows(await kapi.listKlienMutations({ item_id: item.id })); }
+    catch (err) { toast.error(apiError(err, "Gagal memuat riwayat")); }
+    finally { setLoading(false); }
+  }, [item?.id]);
+  useEffect(() => { if (open) load(); }, [open, load]);
+
+  const changed = () => { load(); onChanged?.(); };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" data-testid="klien-detail-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-display">Detail Mutasi — {item?.jenis_item}</DialogTitle>
+            <DialogDescription>
+              {klien?.nama} · PO No. {po?.no_po} · Stok saat ini{" "}
+              <b>{fmtQty(item?.kuantiti)} {item?.satuan}</b>
+            </DialogDescription>
+          </DialogHeader>
+          {loading && rows.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Memuat…</p>
+          ) : rows.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Belum ada mutasi untuk item ini.</p>
+          ) : (
+            <ul className="space-y-2">
+              {rows.map((m) => {
+                const masuk = m.jenis === "masuk";
+                const hist = m.history?.length ? m.history : [{ action: "buat", by_name: m.created_by_name || m.pic_name, at: m.created_at, changes: {} }];
+                return (
+                  <li key={m.id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-semibold ${masuk ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400"}`}>
+                            {masuk ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}
+                            {masuk ? "Masuk" : "Keluar"}
+                          </span>
+                          <span className="font-semibold [font-variant-numeric:tabular-nums]">{masuk ? "+" : "−"}{fmtQty(m.jumlah)} {item?.satuan}</span>
+                          <span className="text-sm text-muted-foreground">{fmtDT(m.tanggal)}</span>
+                        </div>
+                        {m.keterangan ? <div className="mt-1 text-sm text-muted-foreground">{m.keterangan}</div> : null}
+                      </div>
+                      <div className="flex gap-0.5">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Ubah" onClick={() => setEditing(m)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 hover:text-destructive" title="Hapus" onClick={() => setDeleting(m)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                    <ol className="mt-2 space-y-1 border-l-2 border-muted pl-3 text-xs text-muted-foreground">
+                      {hist.map((h, i) => (
+                        <li key={i}>
+                          <span className="font-medium text-foreground">{h.action === "buat" ? "Dibuat" : "Diubah"}</span>
+                          {" oleh "}<span className="font-medium text-foreground">{h.by_name || "-"}</span>
+                          {" · "}{fmtDT(h.at)}
+                          {h.changes && Object.keys(h.changes).length > 0 && (
+                            <span>{" — "}{Object.entries(h.changes).map(([k, [a, b]]) => `${KFIELD[k] || k}: ${kShow(k, a)} → ${kShow(k, b)}`).join("; ")}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
+      <MutationDialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}
+        item={item} po={po} klien={klien} mutation={editing ? { ...editing, jenis_item: item?.jenis_item } : null} onSaved={changed} />
+      <ConfirmDeleteDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}
+        title="Hapus mutasi ini?" description="Stok item akan dihitung ulang otomatis."
+        onConfirm={() => kapi.deleteKlienMutation(deleting.id)} onDeleted={changed} />
+    </>
   );
 }

@@ -22,5 +22,10 @@ export function formatDateId(iso) {
   return `${d} ${ID_MONTHS[m - 1]} ${y}`;
 }
 
-export const TRX_LABEL = { masuk: "Masuk", keluar: "Keluar", retur: "Retur/Sisa" };
-export const MODE_LABEL = { per_rim: "Per Rim", per_kg: "Per Kg", total: "Total Kiriman" };
+/** "2026-10-01" → "01/10/2026" (ringkas untuk tabel PDF). */
+export function formatDateSlash(iso) {
+  const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso ? String(iso) : "-");
+}
+
+export const TRX_LABEL = { masuk: "Masuk", keluar: "Keluar" };

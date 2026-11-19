@@ -1,6 +1,6 @@
 import { handle, json, readJson, HttpError } from "@/server/http";
 import { requireAuth } from "@/server/auth";
-import { getDb, COL } from "@/server/mongo";
+import { getDb, COL, nowIso } from "@/server/mongo";
 import { num, validateMutasiJenis } from "@/server/klien";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ async function getMutationOr404(id) {
 }
 
 export const PUT = handle(async (req, { params }) => {
-  await requireAuth(req);
+  const current = await requireAuth(req);
   const { id } = await params;
   const m = await getMutationOr404(id);
   const body = await readJson(req);
@@ -42,7 +42,18 @@ export const PUT = handle(async (req, { params }) => {
   if (body?.tanggal !== undefined && body.tanggal !== null) updates.tanggal = body.tanggal;
   if (body?.keterangan !== undefined && body.keterangan !== null) updates.keterangan = String(body.keterangan);
 
-  await db.collection(COL.klienMutations).updateOne({ id }, { $set: updates });
+  // Catat siapa mengubah apa (tampil di dialog Detail).
+  const changes = {};
+  for (const f of ["jenis", "jumlah", "tanggal", "keterangan"]) {
+    if (f in updates && String(m[f] ?? "") !== String(updates[f] ?? "")) changes[f] = [m[f] ?? "", updates[f] ?? ""];
+  }
+  const by = current.name || current.username;
+  const at = nowIso();
+  const hist = { action: "ubah", by_id: current.id, by_name: by, at, changes };
+  await db.collection(COL.klienMutations).updateOne({ id }, {
+    $set: { ...updates, updated_at: at, updated_by_name: by },
+    $push: { history: hist },
+  });
   await db.collection(COL.klienItems).updateOne({ id: item.id }, { $set: { kuantiti: newQty } });
 
   return json(await db.collection(COL.klienMutations).findOne({ id }, { projection: { _id: 0 } }));

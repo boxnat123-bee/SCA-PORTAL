@@ -9,7 +9,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import StatCard from "@/components/StatCard";
 import ClientCard from "@/components/klien/ClientCard";
 import {
-  KlienDialog, PODialog, ItemDialog, MutationDialog, ConfirmDeleteDialog,
+  KlienDialog, PODialog, ItemDialog, MutationDialog, ConfirmDeleteDialog, KlienDetailDialog,
 } from "@/components/klien/KlienDialogs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,15 @@ export default function KlienDashboard() {
       onConfirm: () => kapi.deleteKlienItem(item.id),
     }),
     mutasi: (item, po, klien, jenis) => setDialog({ type: "mutasi", item, po, klien, jenis }),
+    detail: (item, po, klien) => setDialog({ type: "detail", item, po, klien }),
     toggleStatus,
+  };
+
+  // Item terbaru dari data (stok ikut berubah setelah edit/hapus di dialog Detail).
+  const liveKlienItem = (it) => {
+    if (!it || !data?.kliens) return it;
+    for (const k of data.kliens) for (const p of k.pos || []) for (const x of p.items || []) if (x.id === it.id) return x;
+    return it;
   };
 
   const filtered = useMemo(() => {
@@ -234,6 +242,8 @@ export default function KlienDashboard() {
         po={dialog?.po} item={dialog?.item} onSaved={refetch} />
       <MutationDialog open={dialog?.type === "mutasi"} onOpenChange={(o) => !o && setDialog(null)}
         item={dialog?.item} po={dialog?.po} klien={dialog?.klien} jenis={dialog?.jenis} onSaved={refetch} />
+      <KlienDetailDialog open={dialog?.type === "detail"} onOpenChange={(o) => !o && setDialog(null)}
+        item={liveKlienItem(dialog?.item)} po={dialog?.po} klien={dialog?.klien} onChanged={refetch} />
       <ConfirmDeleteDialog open={dialog?.type === "delete"} onOpenChange={(o) => !o && setDialog(null)}
         title={dialog?.title} description={dialog?.description}
         onConfirm={dialog?.onConfirm || (() => Promise.resolve())} onDeleted={refetch} />

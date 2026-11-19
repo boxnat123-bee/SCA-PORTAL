@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LangContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/NotificationBell";
 import Logo from "@/components/Logo";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import NavUser from "@/components/NavUser";
@@ -63,7 +64,6 @@ export default function AppShell() {
     { to: "/stok/tinta", label: "Mutasi Tinta", icon: Droplets, show: perms.canStokMutations },
     { to: "/stok/lainnya", label: "Mutasi Lain", icon: Package, show: perms.canStokMutations },
     { to: "/stok/laporan-stok", label: "Laporan Stok", icon: ClipboardList, show: perms.canStokReport },
-    { to: "/stok/laporan-detail", label: "Laporan Detail", icon: BarChart3, locked: true, show: perms.canStokDetail },
     { to: "/stok/tutup-tahun", label: "Tutup Tahun", icon: CalendarX, locked: true, show: perms.canStokYearClose },
   ].filter((m) => m.show);
 
@@ -84,7 +84,6 @@ export default function AppShell() {
   const klienMenu = perms.canStokKlien
     ? [
         { to: "/stok-klien", label: "Dashboard Stok Klien", icon: Boxes, end: true },
-        { to: "/stok-klien/riwayat", label: "Riwayat Mutasi Klien", icon: History },
       ]
     : [];
 
@@ -204,6 +203,7 @@ export default function AppShell() {
               </SelectTrigger>
               <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
             </Select>
+            <NotificationBell />
             <ThemeToggle />
           </div>
         </header>

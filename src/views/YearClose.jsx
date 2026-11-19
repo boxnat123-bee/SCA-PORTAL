@@ -20,7 +20,7 @@ function Inner() {
   const { user } = useAuth();
   const isSuper = user?.role === "superadmin";
   const year = new Date().getFullYear();
-  const [steps, setSteps] = useState({ paper: false, ink: false, nominal: false });
+  const [steps, setSteps] = useState({ mutations: false, stock: false });
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwd, setPwd] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -30,37 +30,31 @@ function Inner() {
     setBusy(true);
     try {
       await downloadPdf("/pdf/paper-mutations", {}, `laporan-mutasi-kertas-${year}.pdf`);
-      setSteps((s) => ({ ...s, paper: true }));
       await downloadPdf("/pdf/ink-mutations", {}, `laporan-mutasi-tinta-${year}.pdf`);
-      setSteps((s) => ({ ...s, ink: true }));
-      toast.success("PDF mutasi kertas & tinta terunduh.");
+      await downloadPdf("/pdf/other-mutations", {}, `laporan-mutasi-lain-${year}.pdf`);
+      setSteps((s) => ({ ...s, mutations: true }));
+      toast.success("PDF mutasi kertas, tinta & lain terunduh.");
     } catch (e) { toast.error(apiError(e, "Gagal unduh PDF mutasi")); }
     finally { setBusy(false); }
   };
 
-  /** Unduh PDF nominal tanpa cek password (superadmin / setelah verifikasi). */
-  const runNominalDownload = async () => {
+  const dlStock = async () => {
     try {
-      await downloadPdf("/pdf/stock-nominal", {}, `laporan-stok-keseluruhan-${year}.pdf`);
-      setSteps((s) => ({ ...s, nominal: true }));
-      setPwdOpen(false); setPwd("");
-      toast.success("PDF stok keseluruhan (nominal) terunduh.");
+      await downloadPdf("/pdf/stock-ringkas", {}, `laporan-stok-akhir-${year}.pdf`);
+      setSteps((s) => ({ ...s, stock: true }));
+      toast.success("PDF stok akhir terunduh.");
     } catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); }
   };
 
-
-  // Halaman ini khusus Superadmin: langsung unduh.
-  const requestNominal = () => { runNominalDownload(); };
-
-  const allDone = steps.paper && steps.ink && steps.nominal;
+  const allDone = steps.mutations && steps.stock;
 
   const doClose = async () => {
     setBusy(true);
     try {
       const { data } = await api.post("/year/close");
-      toast.success(`Tahun ditutup. ${data.paper_deleted + data.ink_deleted} mutasi dihapus.`);
+      toast.success(`Tahun ditutup. ${data.paper_deleted + data.ink_deleted + data.other_deleted} mutasi dihapus, ${data.paper_carried + data.ink_carried + data.other_carried} saldo awal dibuat.`);
       setConfirmOpen(false);
-      setSteps({ paper: false, ink: false, nominal: false });
+      setSteps({ mutations: false, stock: false });
     } catch (e) { toast.error(apiError(e)); }
     finally { setBusy(false); }
   };
@@ -90,16 +84,16 @@ function Inner() {
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-4">
-          <Step done={steps.paper && steps.ink}>PDF Laporan Mutasi Kertas & Tinta (setahun penuh)</Step>
-          <Step done={steps.nominal}>PDF Laporan Stok Keseluruhan (nominal + grafik) — perlu password</Step>
+          <Step done={steps.mutations}>PDF Laporan Mutasi Kertas, Tinta & Lain (setahun penuh)</Step>
+          <Step done={steps.stock}>PDF Laporan Stok Akhir</Step>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="gap-2" data-testid="download-mutations-pdf" disabled={busy} onClick={dlMutations}>
             <FileDown className="h-4 w-4" /> Unduh PDF Mutasi
           </Button>
-          <Button variant="outline" className="gap-2" data-testid="download-nominal-pdf" onClick={requestNominal}>
-            <FileDown className="h-4 w-4" /> Unduh PDF Stok Keseluruhan
+          <Button variant="outline" className="gap-2" data-testid="download-stock-pdf" onClick={dlStock}>
+            <FileDown className="h-4 w-4" /> Unduh PDF Stok Akhir
           </Button>
         </div>
       </Card>
@@ -107,7 +101,7 @@ function Inner() {
       <Card className="p-6 space-y-4">
         <div>
           <h3 className="font-display text-lg font-bold">Langkah 2 — Reset Data Tahun</h3>
-          <p className="text-sm text-muted-foreground">Menghapus SELURUH data mutasi kertas & tinta. Data user & log tetap tersimpan.</p>
+          <p className="text-sm text-muted-foreground">Menghapus seluruh riwayat mutasi kertas, tinta & lain. Item tetap ada dan sisa stok dibawa sebagai mutasi masuk "Saldo awal". Data user & log tetap tersimpan.</p>
         </div>
         <Button variant="destructive" className="gap-2" data-testid="close-year-button" disabled={!allDone || busy}
           onClick={() => setConfirmOpen(true)}>
@@ -120,15 +114,15 @@ function Inner() {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent data-testid="year-close-confirm-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Yakin ingin menghapus seluruh data mutasi?</AlertDialogTitle>
+            <AlertDialogTitle>Yakin ingin menutup tahun?</AlertDialogTitle>
             <AlertDialogDescription>
-              Seluruh data mutasi & stok kertas dan tinta akan dihapus permanen dan tahun baru dimulai. Tindakan ini tidak bisa dibatalkan.
+              Seluruh riwayat mutasi akan dihapus permanen. Sisa stok tiap item dicatat ulang sebagai "Saldo awal". Tindakan ini tidak bisa dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" data-testid="confirm-year-close" onClick={doClose}>
-              Ya, Hapus & Reset
+              Ya, Tutup Tahun
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

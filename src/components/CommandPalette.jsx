@@ -65,7 +65,6 @@ export default function CommandPalette({ open, onOpenChange }) {
       { to: "/stok/tinta", label: "Mutasi Tinta", icon: ICONS.tinta, show: perms.canStokMutations },
       { to: "/stok/lainnya", label: "Mutasi Lain", icon: ICONS.lain, show: perms.canStokMutations },
       { to: "/stok/laporan-stok", label: "Laporan Stok", icon: ICONS.laporan, show: perms.canStokReport },
-      { to: "/stok/laporan-detail", label: "Laporan Detail", icon: ICONS.detail, show: perms.canStokDetail },
       { to: "/stok/log-user", label: "Log & User", icon: ICONS.log, show: perms.canStokLogs },
       { to: "/stok/tutup-tahun", label: "Tutup Tahun", icon: ICONS.tahun, show: perms.canStokYearClose },
     ].filter((i) => i.show);
@@ -84,7 +83,6 @@ export default function CommandPalette({ open, onOpenChange }) {
     const klien = perms.canStokKlien
       ? [
           { to: "/stok-klien", label: "Dashboard Stok Klien", icon: Boxes },
-          { to: "/stok-klien/riwayat", label: "Riwayat Mutasi Klien", icon: History },
         ]
       : [];
 
