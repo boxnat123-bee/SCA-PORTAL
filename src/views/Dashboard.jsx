@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import api from "@/lib/api";
 import * as poApi from "@/lib/poApi";
@@ -9,13 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { formatNumber, formatRupiah } from "@/lib/format";
 import { stagePos, stageName } from "@/lib/poStages";
 import PageContainer from "@/components/layout/PageContainer";
-import ChartBox from "@/components/ChartBox";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-
-const TREND_CONFIG = {
-  paper_masuk: { label: "Masuk", color: "hsl(var(--chart-1))" },
-  paper_keluar: { label: "Keluar", color: "hsl(var(--chart-2))" },
-};
+import MutationTrend from "@/components/MutationTrend";
 
 const pad = (n) => String(n).padStart(2, "0");
 const localYmd = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -150,24 +143,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr]">
-        <Panel title="Mutasi kertas 6 bulan" action={
-          <div className="flex gap-3.5 text-xs text-foreground/75">
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-[hsl(var(--chart-1))]" />Masuk</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-[hsl(var(--chart-2))]" />Keluar</span>
-          </div>}>
-          <ChartBox className="mt-4 h-56" data-testid="dashboard-trend-chart">
-            <ChartContainer config={TREND_CONFIG}>
-              <BarChart data={data.trend} margin={{ left: -18, right: 4, top: 4 }} barGap={4}>
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tickMargin={4} tick={{ fontSize: 12 }} />
-                <ChartTooltip cursor={{ fill: "hsl(var(--secondary))" }} content={<ChartTooltipContent formatter={(v) => `${formatNumber(v)} Rim`} />} />
-                <Bar dataKey="paper_masuk" name="Masuk" fill="var(--color-paper_masuk)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-                <Bar dataKey="paper_keluar" name="Keluar" fill="var(--color-paper_keluar)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-              </BarChart>
-            </ChartContainer>
-          </ChartBox>
-        </Panel>
+        <MutationTrend />
 
         <Panel title="Mutasi terbaru">
           <div className="mt-1.5" data-testid="dashboard-recent-list">

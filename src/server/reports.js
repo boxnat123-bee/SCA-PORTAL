@@ -2,6 +2,8 @@
 import { getDb, COL, stripId, currentYear } from "@/server/mongo";
 import { collectionFor, listItemsWithStock, itemLabel } from "@/server/mutations";
 import { ID_MONTHS } from "@/server/format";
+import { HttpError } from "@/server/http";
+import { trendRangeError } from "@/lib/trendRange";
 
 const pad = (n) => String(n).padStart(2, "0");
 const round = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
@@ -35,26 +37,6 @@ export async function computeDashboard() {
     ...other.map((m) => ({ ...m, kategori: "Lain", nama: m.nama_barang })),
   ];
 
-  const now = new Date();
-  const months = [];
-  for (let k = 5; k >= 0; k--) {
-    let mm = now.getMonth() + 1 - k;
-    let yy = now.getFullYear();
-    while (mm <= 0) { mm += 12; yy -= 1; }
-    months.push([yy, mm]);
-  }
-  const trend = months.map(([yy, mm]) => {
-    const prefix = `${yy}-${pad(mm)}`;
-    const f = (arr, t) => sum(arr.filter((m) => String(m.date).startsWith(prefix) && m.jenis_transaksi === t).map((m) => m.jumlah));
-    return {
-      label: ID_MONTHS[mm - 1].slice(0, 3),
-      paper_masuk: round(f(paper.filter(isRim), "masuk")),
-      paper_keluar: round(f(paper.filter(isRim), "keluar")),
-      ink_masuk: round(f(ink, "masuk")),
-      ink_keluar: round(f(ink, "keluar")),
-    };
-  });
-
   all.sort((a, b) => `${b.date} ${b.time || ""} ${b.created_at || ""}`.localeCompare(`${a.date} ${a.time || ""} ${a.created_at || ""}`));
 
   return {
@@ -67,10 +49,33 @@ export async function computeDashboard() {
       ...oItems.map((v) => ({ ...v, kategori: "Lain" })),
     ].filter((v) => v.stock <= 0 && v.mutation_count > 0).slice(0, 10),
     mutations_today: all.filter((m) => m.date === today).length,
-    trend,
     recent: all.slice(0, 10),
     year,
   };
+}
+
+// ---------------- GRAFIK MUTASI PER BULAN (Beranda) ----------------
+/** Total masuk/keluar per bulan kalender dalam rentang start..end (1–12 bulan). Kertas: hanya satuan Rim. */
+export async function computeTrend(type, start, end) {
+  const err = trendRangeError(start, end);
+  if (err) throw new HttpError(400, err);
+  let rows = await mutationsOf(type, { start, end });
+  if (type === "paper") {
+    const db = await getDb();
+    const items = await db.collection(COL.stockItems).find({ type }, { projection: { _id: 0, id: 1, satuan: 1 } }).toArray();
+    const rimIds = new Set(items.filter((it) => String(it.satuan || "Rim").toLowerCase() === "rim").map((it) => it.id));
+    rows = rows.filter((m) => rimIds.has(m.item_id));
+  }
+  const [y0, m0] = start.split("-").map(Number);
+  const [y1, m1] = end.split("-").map(Number);
+  const multiYear = y0 !== y1;
+  const out = [];
+  for (let y = y0, m = m0; y < y1 || (y === y1 && m <= m1); m === 12 ? (y++, m = 1) : m++) {
+    const prefix = `${y}-${pad(m)}`;
+    const f = (t) => round(sum(rows.filter((r) => String(r.date).startsWith(prefix) && r.jenis_transaksi === t).map((r) => r.jumlah)));
+    out.push({ label: `${ID_MONTHS[m - 1].slice(0, 3)}${multiYear ? ` ${String(y).slice(2)}` : ""}`, masuk: f("masuk"), keluar: f("keluar") });
+  }
+  return out;
 }
 
 // ---------------- LAPORAN STOK ----------------
