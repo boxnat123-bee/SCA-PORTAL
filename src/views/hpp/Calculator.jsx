@@ -222,13 +222,13 @@ export default function HppCalculator() {
         {/* Main */}
         <main className="flex-1 min-w-0 flex flex-col 2xl:flex-row gap-6">
           <div className="flex-1 min-w-0">
-            {/* Catatan — tampil di PDF (kotak di bawah tanggal, di atas Rincian Komponen Biaya) */}
-            <div className="mb-4 rounded-xl border border-border/70 bg-card p-4 shadow-soft" data-testid="hpp-notes-card">
+            {/* Catatan — hanya di Ringkasan; tampil di PDF (kotak di bawah tanggal, di atas Rincian Komponen Biaya) */}
+            {active === "summary" && <div className="mb-4 rounded-xl border border-border/70 bg-card p-4 shadow-soft" data-testid="hpp-notes-card">
               <label htmlFor="hpp-notes" className="text-sm font-semibold">Catatan <span className="font-normal text-muted-foreground">(tampil di PDF)</span></label>
               <textarea id="hpp-notes" rows={2} value={meta.notes || ""} onChange={(e) => setMeta((m) => ({ ...m, notes: e.target.value }))}
                 placeholder="cth: Harga berlaku 14 hari, belum termasuk ongkos kirim."
                 className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25" />
-            </div>
+            </div>}
             <AnimatePresence mode="wait">
               <motion.div key={active}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
@@ -238,7 +238,7 @@ export default function HppCalculator() {
                   <>
                     <div className="mb-5">
                       <h3 className="font-display text-xl font-semibold">Ringkasan Total HPP</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Total dari 13 komponen biaya, lalu ditambah Laba, Bunga, dan PPN.</p>
+                      <p className="text-sm text-muted-foreground mt-1">Total dari 13 komponen biaya, lalu ditambah Bunga, Laba, dan PPN.</p>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4 mb-6">
                       <div className="rounded-lg border border-border p-4">

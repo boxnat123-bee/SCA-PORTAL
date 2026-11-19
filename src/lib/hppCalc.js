@@ -207,12 +207,13 @@ export function calcAll(s) {
   const labaPct = n(s.total.labaPct);
   const bungaPct = n(s.total.bungaPct);
   const ppnPct = n(s.total.ppnPct);
-  const laba = (labaPct / 100) * subtotal;
-  const afterLaba = subtotal + laba;
-  const bunga = (bungaPct / 100) * afterLaba;
-  const afterBunga = afterLaba + bunga;
-  const ppn = (ppnPct / 100) * afterBunga;
-  const final = afterBunga + ppn;
+  // Urutan: Subtotal → Bunga → Laba → PPN → Harga jual (hasil akhir sama, hanya pembagian nominalnya).
+  const bunga = (bungaPct / 100) * subtotal;
+  const afterBunga = subtotal + bunga;
+  const laba = (labaPct / 100) * afterBunga;
+  const afterLaba = afterBunga + laba;
+  const ppn = (ppnPct / 100) * afterLaba;
+  const final = afterLaba + ppn;
 
   return {
     kertas, warna, ongkosCetak, design, ctp, finishing, laminasi, lem,

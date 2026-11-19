@@ -51,8 +51,8 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
           <span className="tabular-nums text-base font-semibold" data-testid="summary-subtotal">{formatRp(res.subtotal)}</span>
         </div>
         <div className="mt-2">
-          <RateRow label="Laba" pct={rates.labaPct} onPct={(v) => onRate("labaPct", v)} amount={res.laba} />
           <RateRow label="Bunga" pct={rates.bungaPct} onPct={(v) => onRate("bungaPct", v)} amount={res.bunga} />
+          <RateRow label="Laba" pct={rates.labaPct} onPct={(v) => onRate("labaPct", v)} amount={res.laba} />
           <RateRow label="PPN" pct={rates.ppnPct} onPct={(v) => onRate("ppnPct", v)} amount={res.ppn} />
         </div>
         <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t-2 border-primary">

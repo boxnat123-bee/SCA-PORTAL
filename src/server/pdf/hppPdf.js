@@ -99,10 +99,10 @@ export async function buildHppPdf({ name, customer, notes, company, result }) {
       y = 810;
       drawRow("No", "Komponen", null, true);
     }
-    drawRow(i + 1, c.manual ? `${clean(c.label)} (hitung sendiri)` : clean(c.label), c.value);
+    drawRow(i + 1, clean(c.label), c.value);
     if (c.manual && c.rumus) {
       for (const l of wrap(font, clean(c.rumus), 8, 380)) {
-        page.drawText(l, { x: colX.label + 8, y: y - 2, font, size: 8, color: muted });
+        page.drawText(l, { x: colX.label + 8, y: y - 2, font, size: 8.5, color: navy });
         y -= 11;
       }
       y -= 2;
@@ -112,8 +112,8 @@ export async function buildHppPdf({ name, customer, notes, company, result }) {
   y -= 8;
   const summary = [
     ["Subtotal HPP", result?.subtotal, true],
-    [`Laba (${result?.labaPct || 0}%)`, result?.laba, false],
     [`Bunga (${result?.bungaPct || 0}%)`, result?.bunga, false],
+    [`Laba (${result?.labaPct || 0}%)`, result?.laba, false],
     [`PPN (${result?.ppnPct || 0}%)`, result?.ppn, false],
     ["HARGA JUAL / PCS", result?.final, true],
   ];
