@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { embedLogo, LOGO_RATIO } from "@/server/pdf/logo";
 
 const A4 = [595.28, 841.89];
 
@@ -48,7 +49,8 @@ export async function createDoc({ landscape = false } = {}) {
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const size = landscape ? [A4[1], A4[0]] : [A4[0], A4[1]];
-  const ctx = { pdf, font, bold, size, margin: 34, page: null, y: 0, landscape, pageHeader: null };
+  const logo = await embedLogo(pdf);
+  const ctx = { pdf, font, bold, size, margin: 34, page: null, y: 0, landscape, pageHeader: null, logo };
   newPage(ctx);
   return ctx;
 }
@@ -111,13 +113,12 @@ export function nowWibLabel() {
 export function docHeader(ctx, title, periodLabel, { printedBy = "", periodName = "Periode" } = {}) {
   const top = ctx.y;
   const x0 = ctx.margin;
-  const box = 32;
-  ctx.page.drawRectangle({ x: x0, y: top - box, width: box, height: box, color: C.navy });
-  const mono = "SCA";
-  const mw = ctx.bold.widthOfTextAtSize(mono, 10);
-  ctx.page.drawText(mono, { x: x0 + (box - mw) / 2, y: top - box / 2 - 3.5, size: 10, font: ctx.bold, color: C.white });
-  ctx.page.drawText("PERCETAKAN SCA", { x: x0 + box + 10, y: top - 10, size: 7.5, font: ctx.bold, color: C.muted });
-  ctx.page.drawText(sanitize(title), { x: x0 + box + 10, y: top - 27, size: 15, font: ctx.bold, color: C.text });
+  const box = 34;                       // tinggi logo
+  const logoW = box * LOGO_RATIO;
+  ctx.page.drawImage(ctx.logo, { x: x0, y: top - box, width: logoW, height: box });
+  const tx = x0 + logoW + 12;
+  ctx.page.drawText("PERCETAKAN SCA", { x: tx, y: top - 11, size: 7.5, font: ctx.bold, color: C.muted });
+  ctx.page.drawText(sanitize(title), { x: tx, y: top - 28, size: 15, font: ctx.bold, color: C.text });
 
   // Meta kanan (label abu-abu, nilai tebal)
   const meta = [[periodName, periodLabel || "-"], ["Tanggal cetak", nowWibLabel()]];
@@ -138,9 +139,8 @@ export function docHeader(ctx, title, periodLabel, { printedBy = "", periodName 
   // Halaman berikutnya: kop ringkas
   ctx.pageHeader = (c) => {
     c.page.drawText(sanitize(title), { x: c.margin, y: c.y - 10, size: 10, font: c.bold, color: C.text });
-    const t = "PERCETAKAN SCA";
-    const tw = c.bold.widthOfTextAtSize(t, 7.5);
-    c.page.drawText(t, { x: c.size[0] - c.margin - tw, y: c.y - 9, size: 7.5, font: c.bold, color: C.muted });
+    const lh = 16, lw = lh * LOGO_RATIO;
+    c.page.drawImage(c.logo, { x: c.size[0] - c.margin - lw, y: c.y - 13, width: lw, height: lh });
     c.y -= 16;
     c.page.drawRectangle({ x: c.margin, y: c.y - 1.2, width: contentWidth(c), height: 1.2, color: C.navy });
     c.y -= 12;

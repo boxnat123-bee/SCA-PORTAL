@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { embedLogo, LOGO_RATIO } from "@/server/pdf/logo";
 
 function rp(v) {
   const num = Number(v || 0);
@@ -20,10 +21,14 @@ export async function buildHppPdf({ name, customer, notes, company, result }) {
   const marginX = 40;
   let y = 810;
 
-  page.drawText(company || "Percetakan SCA", { x: marginX, y, font: bold, size: 20, color: navy });
+  const logo = await embedLogo(doc);
+  const logoH = 40, logoW = logoH * LOGO_RATIO;
+  page.drawImage(logo, { x: marginX, y: y - logoH + 16, width: logoW, height: logoH });
+  const tX = marginX + logoW + 12;
+  page.drawText(company || "Percetakan SCA", { x: tX, y, font: bold, size: 20, color: navy });
   y -= 18;
-  page.drawText("Penawaran Harga Pokok Produksi (HPP)", { x: marginX, y, font, size: 10, color: muted });
-  y -= 26;
+  page.drawText("Penawaran Harga Pokok Produksi (HPP)", { x: tX, y, font, size: 10, color: muted });
+  y -= 30;
 
   const meta = [
     ["Nama Produk", name || "-"],

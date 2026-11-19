@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { STAGE_ORDER, WAITING_IDS } from "@/server/po/stages";
+import { embedLogo, LOGO_RATIO } from "@/server/pdf/logo";
 
 /**
  * Rekap Daftar PO — A4 TEGAK (portrait).
@@ -113,14 +114,18 @@ export async function buildPoRekapPdf({ pos, month }) {
   let y = topY;
   const newPage = () => { page = doc.addPage([pageW, pageH]); y = topY; };
 
-  // ===== Judul dokumen =====
-  page.drawText("Rekap Purchase Order - SCA", { x: mX, y, font: bold, size: 17, color: navy });
+  // ===== Judul dokumen (dengan logo) =====
+  const logo = await embedLogo(doc);
+  const logoH = 34, logoW = logoH * LOGO_RATIO;
+  page.drawImage(logo, { x: mX, y: y - logoH + 12, width: logoW, height: logoH });
+  const tX = mX + logoW + 12;
+  page.drawText("Rekap Purchase Order - SCA", { x: tX, y, font: bold, size: 17, color: navy });
   y -= 17;
   const now = new Date();
   const scope = month ? `Bulan: ${monthLabel(month)}` : "Semua Bulan";
   const sub = `${scope}  •  Total PO: ${pos.length}  •  Dicetak: ${now.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })} ${now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`;
-  page.drawText(safe(sub), { x: mX, y, font, size: 9, color: muted });
-  y -= 22;
+  page.drawText(safe(sub), { x: tX, y, font, size: 9, color: muted });
+  y -= 26;
 
   if (!pos.length) {
     page.drawText("Tidak ada data PO untuk filter ini.", { x: mX, y, font, size: 11 });
