@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList,
-  Users, CalendarX, Menu, X, Calculator,
+  Users, Menu, X, Calculator,
   ListTodo, CalendarDays, Globe, Search, Boxes, Receipt, PieChart, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -65,7 +65,7 @@ export default function AppShell() {
     { to: "/stok/tinta", label: L("Mutasi Tinta", "Ink Movements"), icon: Droplets, show: perms.canStokMutations },
     { to: "/stok/lainnya", label: L("Mutasi Lain", "Other Movements"), icon: Package, show: perms.canStokMutations },
     { to: "/stok/laporan-stok", label: L("Laporan Stok", "Stock Report"), icon: ClipboardList, show: perms.canStokReport },
-    { to: "/stok/tutup-tahun", label: L("Tutup Tahun", "Year-End Close"), icon: CalendarX, show: perms.canStokYearClose },
+    { to: "/stok/hapus-data", label: L("Hapus Data Mutasi Stok", "Clear Stock Movements"), icon: Trash2, show: perms.canStokYearClose },
   ].filter((m) => m.show);
 
   const logUserItem = perms.canStokLogs
@@ -86,6 +86,9 @@ export default function AppShell() {
         { to: "/tempo", label: L("Jatuh Tempo Klien", "Client Due Dates"), icon: Receipt, end: true },
         { to: "/tempo/laporan", label: L("Laporan Jatuh Tempo", "Due Date Report"), icon: PieChart },
       ]
+    : [];
+  const keuanganResetItem = isSuper && perms.canTempo
+    ? [{ to: "/tempo/hapus-data", label: L("Hapus Data Keuangan", "Clear Finance Data"), icon: Trash2 }]
     : [];
   const hppMenu = perms.canHpp ? [{ to: "/hpp", label: L("Kalkulator HPP", "COGS Calculator"), icon: Calculator, end: true }] : [];
 
@@ -117,7 +120,7 @@ export default function AppShell() {
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 pb-3 scrollbar-thin" aria-label={L("Menu utama", "Main menu")}>
-        <SectionHeader label={L("Stok", "Stock")} />
+        <SectionHeader label={L("Mutasi Stok", "Stock Movements")} />
         <div className="space-y-0.5">{stokMenu.map((item) => <NavItem key={item.to} item={item} />)}</div>
         <SectionHeader label={L("Produksi", "Production")} />
         <div className="space-y-0.5">
@@ -131,6 +134,7 @@ export default function AppShell() {
             <div className="space-y-0.5">
               {tempoMenu.map((item) => <NavItem key={item.to} item={item} />)}
               {hppMenu.map((item) => <NavItem key={item.to} item={item} />)}
+              {keuanganResetItem.map((item) => <NavItem key={item.to} item={item} />)}
             </div>
           </>
         )}

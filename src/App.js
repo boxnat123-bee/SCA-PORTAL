@@ -29,6 +29,7 @@ const PoForm = lazy(() => import("@/views/po/PoForm"));
 const PoDetail = lazy(() => import("@/views/po/PoDetail"));
 const PoCalendar = lazy(() => import("@/views/po/PoCalendar"));
 const ProduksiReset = lazy(() => import("@/views/po/ProduksiReset"));
+const KeuanganReset = lazy(() => import("@/views/tempo/KeuanganReset"));
 // Stok Klien (tool baru)
 const KlienDashboard = lazy(() => import("@/views/klien/Dashboard"));
 // Jatuh Tempo Klien (tool baru — Superadmin only)
@@ -72,7 +73,8 @@ function App() {
                     <Route path="stok/lainnya" element={<OtherMutations />} />
                     <Route path="stok/laporan-stok" element={<StockReport />} />
                     <Route path="stok/log-user" element={<RequireSuper><LogsUsers /></RequireSuper>} />
-                    <Route path="stok/tutup-tahun" element={<RequireSuper><YearClose /></RequireSuper>} />
+                    <Route path="stok/hapus-data" element={<RequireSuper><YearClose /></RequireSuper>} />
+                    <Route path="stok/tutup-tahun" element={<Navigate to="/stok/hapus-data" replace />} />
                     {/* HPP tools — superadmin only */}
                     <Route path="hpp" element={<RequireSuper><HppCalculator /></RequireSuper>} />
                     {/* PO Tracker tools */}
@@ -88,6 +90,7 @@ function App() {
                     {/* Jatuh Tempo Klien tools — Superadmin only */}
                     <Route path="tempo" element={<RequireSuper><TempoInvoices /></RequireSuper>} />
                     <Route path="tempo/laporan" element={<RequireSuper><TempoReports /></RequireSuper>} />
+                    <Route path="tempo/hapus-data" element={<RequireSuper><KeuanganReset /></RequireSuper>} />
                     {/* Legacy aliases (backward compat) */}
                     <Route path="kertas" element={<Navigate to="/stok/kertas" replace />} />
                     <Route path="tinta" element={<Navigate to="/stok/tinta" replace />} />
@@ -95,7 +98,7 @@ function App() {
                     <Route path="laporan-stok" element={<Navigate to="/stok/laporan-stok" replace />} />
                     <Route path="laporan-detail" element={<Navigate to="/stok/laporan-stok" replace />} />
                     <Route path="log-user" element={<Navigate to="/stok/log-user" replace />} />
-                    <Route path="tutup-tahun" element={<Navigate to="/stok/tutup-tahun" replace />} />
+                    <Route path="tutup-tahun" element={<Navigate to="/stok/hapus-data" replace />} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

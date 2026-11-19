@@ -13,13 +13,15 @@ const ROUTE_LABELS = {
   "laporan-stok": "Laporan Stok",
   "laporan-detail": "Laporan Detail",
   "log-user": "Log & User",
-  "tutup-tahun": "Tutup Tahun",
+  "tutup-tahun": "Hapus Data Mutasi Stok",
   po: "Tracking PO",
   pos: "Daftar PO",
   new: "PO Baru",
   edit: "Ubah PO",
   kalender: "Kalender Produksi",
-  "hapus-data": "Hapus Data Produksi",
+  "po/hapus-data": "Hapus Data Produksi",
+  "stok/hapus-data": "Hapus Data Mutasi Stok",
+  "tempo/hapus-data": "Hapus Data Keuangan",
   hpp: "Kalkulator HPP",
   "stok-klien": "Stok Klien",
   riwayat: "Riwayat Mutasi",
@@ -42,7 +44,7 @@ export function useBreadcrumbs() {
       return;
     }
     items.push({
-      title: ROUTE_LABELS[seg] ?? seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " "),
+      title: ROUTE_LABELS[`${segments[0]}/${seg}`] ?? ROUTE_LABELS[seg] ?? seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " "),
       link: path,
     });
   });

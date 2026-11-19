@@ -66,7 +66,7 @@ export default function CommandPalette({ open, onOpenChange }) {
       { to: "/stok/lainnya", label: "Mutasi Lain", icon: ICONS.lain, show: perms.canStokMutations },
       { to: "/stok/laporan-stok", label: "Laporan Stok", icon: ICONS.laporan, show: perms.canStokReport },
       { to: "/stok/log-user", label: "Log & User", icon: ICONS.log, show: perms.canStokLogs },
-      { to: "/stok/tutup-tahun", label: "Tutup Tahun", icon: ICONS.tahun, show: perms.canStokYearClose },
+      { to: "/stok/hapus-data", label: "Hapus Data Mutasi Stok", icon: ICONS.tahun, show: perms.canStokYearClose },
     ].filter((i) => i.show);
 
     const po = [
@@ -90,6 +90,7 @@ export default function CommandPalette({ open, onOpenChange }) {
       ? [
           { to: "/tempo", label: "Daftar Invoice", icon: Receipt },
           { to: "/tempo/laporan", label: "Laporan Jatuh Tempo", icon: PieChart },
+          { to: "/tempo/hapus-data", label: "Hapus Data Keuangan", icon: ICONS.tahun },
         ]
       : [];
 
