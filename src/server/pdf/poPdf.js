@@ -156,10 +156,10 @@ export async function buildPoRekapPdf({ pos, month }) {
 
   // Tiap baris = [label, nilai, label, nilai] atau { full: [label, nilai] } (nilai selebar tabel)
   const rowsOf = (p) => [
-    ["Tanggal PO", fmtDate(p.po_date), "Qty", p.quantity],
+    ["Tanggal PO", fmtDate(p.po_date), "Quantity Order", p.quantity],
     ["Item", p.item_type, "Bahan", p.material],
     ["Ukuran Kertas Plano", p.paper_size_plano, "Ukuran Kertas", p.paper_size],
-    ["Ukuran Single Face", p.size_single_face, "Ukuran Kres Cetak", p.size_kres_cetak],
+    ["Ukuran Kres Cetak", p.size_kres_cetak, "Ukuran Single Face", p.size_single_face],
     ["Ukuran Kres Pisau Plong", p.size_kres_pisau, "Mesin Cetak", p.print_machine],
     ["Est. Produksi", estText(p), "Tahap Saat Ini", p.computed?.current_stage_name],
     { full: ["Dibuat Oleh", p.created_by] },

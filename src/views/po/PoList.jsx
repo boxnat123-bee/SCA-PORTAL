@@ -225,7 +225,7 @@ export default function PoList() {
                   <div className="po-info text-sm">
                     <RowInfo label="Item" value={po.item_type} />
                     <RowInfo label="Ukuran Kertas" value={po.paper_size} />
-                    <RowInfo label="Qty" value={po.quantity} />
+                    <RowInfo label="Qty Order" value={po.quantity} />
                     <RowInfo label="Mesin" value={po.print_machine} />
                     <RowInfo label="Est. Produksi" value={(po.est_start || po.est_end) ? `${fmtDate(po.est_start)} → ${fmtDate(po.est_end)}` : ""} wide />
                     <RowInfo label={t("stage")} value={po.computed?.current_stage_name} wide />

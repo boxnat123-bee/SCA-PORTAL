@@ -77,10 +77,10 @@ export default function PoDetail() {
         <Info label={t("material")} value={po.material} />
         <Info label={t("paperSizePlano")} value={po.paper_size_plano} />
         <Info label={t("paperSize")} value={po.paper_size} />
-        <Info label={t("quantity")} value={po.quantity} />
-        <Info label={t("sizeSingleFace")} value={po.size_single_face} />
         <Info label={t("sizeKresCetak")} value={po.size_kres_cetak} />
+        <Info label={t("sizeSingleFace")} value={po.size_single_face} />
         <Info label={t("sizeKresPisau")} value={po.size_kres_pisau} />
+        <Info label={t("quantity")} value={po.quantity} />
         <Info label={t("poDate")} value={fmtDate(po.po_date)} />
         <Info label={t("estStart")} value={fmtDate(po.est_start)} />
         <Info label={t("estEnd")} value={fmtDate(po.est_end)} />
