@@ -101,15 +101,15 @@ export default function PoForm() {
           <div className="grid sm:grid-cols-2 gap-4">
             {field("po_number", t("poNumber") + " *")}
             {field("client_name", t("clientName") + " *")}
-            {field("item_type", t("itemType"))}
+            {field("po_date", t("poDate"), "date")}
             {field("material", t("material"))}
+            {field("item_type", t("itemType"))}
             {field("paper_size_plano", t("paperSizePlano"), "text", "cth: 65 x 100")}
             {field("paper_size", t("paperSize"), "text", "cth: 83 x 56,5")}
             {field("size_kres_cetak", t("sizeKresCetak"), "text", "cth: 81,5 x 54,5")}
             {field("size_single_face", t("sizeSingleFace"), "text", "cth: 82,3 x 55,8")}
             {field("size_kres_pisau", t("sizeKresPisau"), "text", "cth: 80 x 52")}
             {field("quantity", t("quantity"))}
-            {field("po_date", t("poDate"), "date")}
             <div className="space-y-2 min-w-0">
               <Label>{t("printMachine")}</Label>
               <MachineField value={form.print_machine} onChange={(v) => set("print_machine", v)} />
