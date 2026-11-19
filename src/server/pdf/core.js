@@ -121,7 +121,7 @@ export function docHeader(ctx, title, periodLabel, { printedBy = "", periodName 
   ctx.page.drawText(sanitize(title), { x: tx, y: top - 28, size: 15, font: ctx.bold, color: C.text });
 
   // Meta kanan (label abu-abu, nilai tebal)
-  const meta = [[periodName, periodLabel || "-"], ["Tanggal cetak", nowWibLabel()]];
+  const meta = [...(periodName ? [[periodName, periodLabel || "-"]] : []), ["Tanggal cetak", nowWibLabel()]];
   if (printedBy) meta.push(["Dicetak oleh", printedBy]);
   const right = ctx.size[0] - ctx.margin;
   const valW = Math.max(...meta.map(([, v]) => widthOf(ctx, v, 8, true)));

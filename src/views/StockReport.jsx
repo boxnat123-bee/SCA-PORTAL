@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
 import { formatNumber } from "@/lib/format";
+import { priceText } from "@/lib/price";
 import { Button } from "@/components/ui/button";
 import PageContainer from "@/components/layout/PageContainer";
 
@@ -60,7 +61,7 @@ export default function StockReport() {
     if (!tokens.length) return list;
     return list.filter((it) => matchAll(norm([
       nameOf(tab, it), specOf(tab, it), `${it.gramatur || ""}gr`, `${it.panjang || ""}x${it.lebar || ""}`,
-      it.satuan, (it.suppliers || []).join(" "), it.keterangan,
+      it.satuan, priceText(it), (it.suppliers || []).join(" "), it.keterangan,
     ].join(" | ")), tokens));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, tab, tokens]);
@@ -123,9 +124,10 @@ export default function StockReport() {
             <thead>
               <tr className="bg-secondary/50 text-left text-[11.5px] font-semibold text-muted-foreground">
                 <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">{cur.head}</th>
-                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Satuan</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Harga</th>
                 <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Supplier</th>
-                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5 text-right">Stok akhir</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5 text-right">Stok Akhir</th>
+                <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Satuan</th>
                 <th className="whitespace-nowrap border-b border-border px-3.5 py-2.5">Keterangan</th>
               </tr>
             </thead>
@@ -138,16 +140,17 @@ export default function StockReport() {
                       <div className="font-semibold">{nameOf(tab, it)}</div>
                       {specOf(tab, it) && <div className="text-xs text-muted-foreground">{specOf(tab, it)}</div>}
                     </td>
-                    <td className="px-3.5 py-3">{it.satuan || "-"}</td>
+                    <td className="px-3.5 py-3 text-foreground/75">{priceText(it) || "–"}</td>
                     <td className="px-3.5 py-3 text-foreground/75">{(it.suppliers || []).join(", ") || "–"}</td>
                     <td className={`px-3.5 py-3 text-right font-bold ${low ? "text-rose-700 dark:text-rose-400" : ""}`}>{formatNumber(it.stock, 2)}</td>
+                    <td className="px-3.5 py-3">{it.satuan || "-"}</td>
                     <td className="px-3.5 py-3 text-foreground/75">{it.keterangan || "–"}</td>
                   </tr>
                 );
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
                     <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-full bg-secondary">
                       {tokens.length ? <SearchX className="h-5 w-5" /> : <Inbox className="h-5 w-5" />}
                     </div>

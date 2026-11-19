@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
-import { formatNumber, formatRupiah, todayStr, fmtDate, fmtDateTime } from "@/lib/format";
+import { formatNumber, todayStr, fmtDate, fmtDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import TableSkeleton from "@/components/TableSkeleton";
+import { priceText } from "@/lib/price";
 import PageContainer from "@/components/layout/PageContainer";
 
 const TITLES = { paper: "Kertas", ink: "Tinta", other: "Lain" };
@@ -47,14 +48,6 @@ const priceModes = (type, satuan) => [
   { v: "total", l: "Total kiriman" },
   { v: "custom", l: "Custom" },
 ];
-export function priceText(it) {
-  if (it?.harga === null || it?.harga === undefined || it?.harga === "") return "";
-  const basis = it.harga_mode === "total" ? "total kiriman"
-    : it.harga_mode === "per_kg" ? "per Kg"
-    : it.harga_mode === "custom" ? (it.harga_label || "custom")
-    : `per ${it.satuan || "satuan"}`;
-  return `${formatRupiah(it.harga)} ${basis}${it.ppn_ada ? ` · PPN ${formatRupiah(it.ppn_nominal)}` : ""}`;
-}
 
 /* ---------------- Dialog item (tambah / ubah) ---------------- */
 function ItemDialog({ type, open, onOpenChange, item, onSaved }) {

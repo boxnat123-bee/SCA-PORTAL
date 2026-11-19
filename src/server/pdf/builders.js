@@ -2,6 +2,7 @@ import {
   createDoc, docHeader, section, drawTable, groupTitle, summaryCards, finish, ensure, text, C,
 } from "@/server/pdf/core";
 import { formatNum, formatDateSlash } from "@/server/format";
+import { priceText } from "@/lib/price";
 
 const dash = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 const when = (m) => `${formatDateSlash(m.date)}${m.time && m.time !== "00:00" ? ` ${m.time}` : ""}`;
@@ -105,7 +106,7 @@ export const otherMutationsPdf = (rows, periodLabel, opts) => groupedMutationsPd
 
 export async function stockSummaryPdf(stock, periodLabel, { printedBy = "" } = {}) {
   const ctx = await createDoc();
-  docHeader(ctx, "Laporan Stok Akhir", periodLabel, { printedBy, periodName: "Posisi stok" });
+  docHeader(ctx, "Laporan Stok Akhir", periodLabel, { printedBy, periodName: null });
   const paper = stock.paper || [], ink = stock.ink || [], other = stock.other || [];
   const rim = paper.filter((p) => String(p.satuan || "Rim").toLowerCase() === "rim").reduce((a, p) => a + Math.max(0, Number(p.stock) || 0), 0);
   const kg = ink.reduce((a, p) => a + Math.max(0, Number(p.stock) || 0), 0);
@@ -115,11 +116,11 @@ export async function stockSummaryPdf(stock, periodLabel, { printedBy = "" } = {
     { label: "Barang lain", value: `${other.length} item` },
   ]);
   const rowsOf = (list, nameFn) => list.map((x) => [
-    nameFn(x), x.satuan || "-", (x.suppliers || []).join(", ") || "-", formatNum(x.stock), dash(x.keterangan),
+    nameFn(x), priceText(x, " - ") || "-", (x.suppliers || []).join(", ") || "-", formatNum(x.stock), x.satuan || "-", dash(x.keterangan),
   ]);
-  const hdr = (first) => [first, "Satuan", "Supplier", "Stok", "Keterangan"];
+  const hdr = (first) => [first, "Harga", "Supplier", "Stok Akhir", "Satuan", "Keterangan"];
   const opt = {
-    weights: [2.3, 0.75, 2.1, 0.75, 1.9], rightCols: [3], wrap: true, boldCols: [3], fontSize: 8.5,
+    weights: [2.1, 1.7, 1.7, 0.8, 0.6, 1.4], rightCols: [3], wrap: true, boldCols: [3], fontSize: 8.5,
     colColors: { 3: (v) => (Number(String(v).replace(/\./g, "").replace(",", ".")) <= 0 ? C.red : C.text) },
   };
 
