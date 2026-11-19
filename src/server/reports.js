@@ -1,5 +1,5 @@
 /** Laporan Stok SCA (tanpa nominal rupiah) — berbasis item + mutasi masuk/keluar. */
-import { getDb, stripId, currentYear } from "@/server/mongo";
+import { getDb, COL, stripId, currentYear } from "@/server/mongo";
 import { collectionFor, listItemsWithStock, itemLabel } from "@/server/mutations";
 import { ID_MONTHS } from "@/server/format";
 
@@ -7,9 +7,14 @@ const pad = (n) => String(n).padStart(2, "0");
 const round = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
 const sum = (arr) => arr.reduce((a, b) => a + Number(b || 0), 0);
 
+/**
+ * Mutasi yang masih terhubung ke item yang ada. Data sisa sistem lama (tanpa item_id)
+ * atau milik item yang sudah dihapus TIDAK ikut ke PDF / dashboard — sama seperti di layar.
+ */
 export async function mutationsOf(type, { start, end } = {}) {
   const db = await getDb();
-  const q = {};
+  const itemIds = await db.collection(COL.stockItems).distinct("id", { type });
+  const q = { item_id: { $in: itemIds } };
   if (start || end) q.date = { ...(start ? { $gte: start } : {}), ...(end ? { $lte: end } : {}) };
   return (await db.collection(collectionFor(type)).find(q).toArray()).map(stripId);
 }

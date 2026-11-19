@@ -1,6 +1,6 @@
 import { handle, json, qp, readJson } from "@/server/http";
 import { getCurrentUser } from "@/server/auth";
-import { getDb, stripId } from "@/server/mongo";
+import { getDb, COL, stripId } from "@/server/mongo";
 import {
   collectionFor, buildMutation, getItemOr404, identityOf, assertStockOk, historyEntry, sortMutationsDesc,
 } from "@/server/mutations";
@@ -13,12 +13,14 @@ export const GET = handle(async (req, { params }) => {
   await getCurrentUser(req);
   const { type } = await params;
   const db = await getDb();
-  const q = {};
+  // Hanya mutasi milik item yang masih ada (data lama tanpa item tidak ikut).
+  const itemIds = await db.collection(COL.stockItems).distinct("id", { type });
+  const q = { item_id: { $in: itemIds } };
   const itemId = qp(req, "item_id");
   const trx = qp(req, "jenis_transaksi");
   const start = qp(req, "start");
   const end = qp(req, "end");
-  if (itemId) q.item_id = itemId;
+  if (itemId) q.item_id = itemIds.includes(itemId) ? itemId : "__none__";
   if (trx) q.jenis_transaksi = trx;
   if (start || end) q.date = { ...(start ? { $gte: start } : {}), ...(end ? { $lte: end } : {}) };
   const rows = (await db.collection(collectionFor(type)).find(q).toArray()).map(stripId);
