@@ -12,6 +12,16 @@ const fmtDate = (iso) => {
   return `${d}/${m}/${y}`;
 };
 
+/** Rincian cicilan per baris: "Ke-1  01/10/2026  Rp 5.000.000". */
+function cicilanText(inv) {
+  if (inv.top !== "Cicilan") return "-";
+  const list = [...(inv.installments || [])]
+    .filter((c) => Number(c.amount) > 0 || c.date)
+    .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+  if (!list.length) return "Belum ada pembayaran";
+  return list.map((c) => `Ke-${c.sequence}  ${fmtDate(c.date)}  ${rp(c.amount)}`).join("\n");
+}
+
 const STATUS_LABEL = (s) => (s === "lunas" ? "Lunas" : "Belum Lunas");
 
 /** Rekap seluruh invoice (dipakai juga sebagai backup wajib sebelum hapus semua). */
@@ -41,6 +51,7 @@ export async function buildInvoicesPdf({ invoices, periodLabel }) {
     rp(i.paid_amount),
     rp(i.remaining_amount),
     STATUS_LABEL(i.status),
+    cicilanText(i),
   ]);
 
   if (rows.length === 0) {
@@ -49,9 +60,9 @@ export async function buildInvoicesPdf({ invoices, periodLabel }) {
   } else {
     drawTable(
       ctx,
-      ["No", "Nama Klien", "No. Invoice", "TOP", "Tgl Invoice", "Jatuh Tempo", "Total", "Terbayar", "Sisa", "Status"],
+      ["No", "Nama Klien", "No. Invoice", "TOP", "Tgl Invoice", "Jatuh Tempo", "Total", "Terbayar", "Sisa", "Status", "Pembayaran Cicilan (tgl - nominal)"],
       rows,
-      { weights: [0.5, 2.3, 1.4, 1, 1.2, 1.2, 1.5, 1.5, 1.5, 1.3], rightCols: [6, 7, 8], fontSize: 7.5 },
+      { weights: [0.45, 2.0, 1.3, 0.9, 1.1, 1.1, 1.35, 1.35, 1.35, 1.05, 2.6], rightCols: [6, 7, 8], fontSize: 7.5, wrap: true },
     );
     ensure(ctx, 30);
     ctx.y -= 4;

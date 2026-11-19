@@ -119,6 +119,9 @@ export function section(ctx, title) {
  */
 /** Pecah teks menjadi beberapa baris agar muat di lebar kolom. */
 export function wrapLines(ctx, str, maxWidth, size = 8, bold = false) {
+  // Baris baru ("\n") dipertahankan sebagai baris terpisah.
+  const parts = String(str ?? "").split(/\r?\n/);
+  if (parts.length > 1) return parts.flatMap((part) => wrapLines(ctx, part, maxWidth, size, bold));
   const words = sanitize(String(str ?? "")).split(/\s+/).filter(Boolean);
   if (!words.length) return [""];
   const lines = [];
