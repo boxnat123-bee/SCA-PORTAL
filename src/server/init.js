@@ -63,17 +63,6 @@ async function runInit() {
       .updateOne({ username: suUser }, { $set: { password_hash: hashPassword(suPass) } });
     console.log("[init] superadmin password disinkronkan dari env");
   }
-
-  // Seed temp access password (idempotent)
-  const temp = await db.collection(COL.settings).findOne({ key: "temp_password" });
-  if (!temp) {
-    await db.collection(COL.settings).insertOne({
-      key: "temp_password",
-      hash: hashPassword(process.env.TEMP_ACCESS_PASSWORD || "superadminsementara"),
-      updated_at: nowIso(),
-    });
-    console.log("[init] seeded temp access password");
-  }
 }
 
 export function ensureInit() {

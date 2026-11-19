@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Power, Trash2, KeyRound, ShieldCheck, Inbox, UserCog } from "lucide-react";
+import { UserPlus, Power, Trash2, ShieldCheck, Inbox, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
 import { formatDateTimeID } from "@/lib/format";
-import SectionGate from "@/components/SectionGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,6 @@ function Inner() {
   const isSuper = user?.role === "superadmin";
   const [regOpen, setRegOpen] = useState(false);
   const [reg, setReg] = useState({ name: "", username: "", password: "", email: "", phone: "", role: "admin" });
-  const [tempPwd, setTempPwd] = useState("");
   const [delUser, setDelUser] = useState(null);
   // Kelola kredensial user (khusus Superadmin, boleh untuk akun sendiri)
   const [editUser, setEditUser] = useState(null);
@@ -104,11 +102,6 @@ function Inner() {
     catch (e) { toast.error(apiError(e)); }
   };
 
-  const changeTemp = async () => {
-    if (tempPwd.length < 4) { toast.error("Password minimal 4 karakter."); return; }
-    try { await api.post("/settings/temp-password", { new_password: tempPwd }); toast.success("Password akses sementara diperbarui."); setTempPwd(""); }
-    catch (e) { toast.error(apiError(e)); }
-  };
 
   return (
     <PageContainer
@@ -271,20 +264,6 @@ function Inner() {
               )}
             </Card>
 
-            <Card className="p-5 md:shrink-0">
-              <div className="mb-2 flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-primary" />
-                <h3 className="font-display text-lg font-bold">Ubah Password Akses Sementara</h3>
-              </div>
-              <p className="mb-3 text-sm text-muted-foreground">Password ini dipakai Admin/PIC untuk membuka section terproteksi. Hanya Superadmin yang bisa mengubahnya.</p>
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1.5">
-                  <Label>Password Baru</Label>
-                  <Input type="password" className="w-64" value={tempPwd} data-testid="temp-password-input" onChange={(e) => setTempPwd(e.target.value)} />
-                </div>
-                <Button data-testid="change-temp-password-button" onClick={changeTemp}>Simpan Password</Button>
-              </div>
-            </Card>
           </TabsContent>
         )}
       </Tabs>
@@ -313,5 +292,5 @@ function Inner() {
 }
 
 export default function LogsUsers() {
-  return <SectionGate title="Log & Manajemen User"><Inner /></SectionGate>;
+  return <Inner />;
 }

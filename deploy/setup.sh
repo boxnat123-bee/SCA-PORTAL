@@ -50,10 +50,6 @@ if [ ! -f "$ENV_FILE" ]; then
     [ "$SU_PASS" = "$SU_PASS2" ] && [ ${#SU_PASS} -ge 8 ] && break
     echo "Tidak sama / kurang dari 8 karakter, ulangi."
   done
-  while :; do
-    read -rsp "Password akses sementara (Admin/PIC buka menu terkunci): " TEMP_PASS </dev/tty; echo
-    case "$TEMP_PASS" in ""|*"'"*|*'"'*|*' '*) echo "Wajib diisi, tanpa tanda kutip/spasi. Ulangi.";; *) break;; esac
-  done
   ENC=$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$MPASS")
   umask 077
   cat > "$ENV_FILE" <<EOV
@@ -62,7 +58,6 @@ DB_NAME='scaportal_prod'
 JWT_SECRET='$(openssl rand -hex 32)'
 SUPERADMIN_USERNAME='${SU_USER}'
 SUPERADMIN_PASSWORD='${SU_PASS}'
-TEMP_ACCESS_PASSWORD='${TEMP_PASS}'
 EOV
   echo "Tersimpan di $ENV_FILE"
 else

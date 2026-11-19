@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
-  Users, CalendarX, Menu, X, Lock, Calculator,
+  Users, CalendarX, Menu, X, Calculator,
   ListTodo, CalendarDays, Globe, Search, Boxes, History, Receipt, PieChart,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ const TIMEOUT_MS = 60 * 60 * 1000;
 const WARN_MS = 58 * 60 * 1000;
 
 export default function AppShell() {
-  const { user, logout, sectionUnlocked, perms } = useAuth();
+  const { user, logout, perms } = useAuth();
   const { lang, setLang } = useLang();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -106,7 +106,6 @@ export default function AppShell() {
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
       <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 ease-out" />
       <span className="flex-1">{item.label}</span>
-      {item.locked && !isSuper && !sectionUnlocked && (<Lock className="h-3.5 w-3.5 opacity-60" />)}
     </NavLink>
   );
 

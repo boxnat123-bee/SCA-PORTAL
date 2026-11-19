@@ -106,22 +106,6 @@ export async function requireAuth(req) {
   return await getCurrentUser(req);
 }
 
-export async function verifyTempPassword(password) {
-  if (!password) return false;
-  const db = await getDb();
-  const setting = await db.collection(COL.settings).findOne({ key: "temp_password" });
-  if (!setting) return false;
-  return verifyPassword(password, setting.hash);
-}
-
-/** Superadmin bebas; role lain wajib kirim header X-Section-Password yang benar. */
-export async function requireSectionAccess(req) {
-  const user = await getCurrentUser(req);
-  if (user.role === "superadmin") return user;
-  const pwd = req.headers.get("x-section-password") || "";
-  if (await verifyTempPassword(pwd)) return user;
-  throw new HttpError(403, "Akses section terkunci");
-}
 
 export async function logAudit(current, action, mutationType, mutationId, before, after) {
   const db = await getDb();

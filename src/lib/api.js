@@ -6,16 +6,11 @@ export const API = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 const api = axios.create({ baseURL: API, withCredentials: true });
 
-let sectionPassword = "";
-export const setSectionPassword = (p) => { sectionPassword = p || ""; };
-export const getSectionPassword = () => sectionPassword;
-
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("stokku_token");
     if (token) config.headers["Authorization"] = `Bearer ${token}`;
   }
-  if (sectionPassword) config.headers["X-Section-Password"] = sectionPassword;
   return config;
 });
 

@@ -4,7 +4,7 @@ import { Plus, Search, FileDown, Pencil, Trash2, Link2, Inbox } from "lucide-rea
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
-import { formatRupiah, formatNumber, formatDateID, todayStr, TRX_LABEL } from "@/lib/format";
+import { formatRupiah, formatNumber, formatDateID, TRX_LABEL } from "@/lib/format";
 import MutationForm from "@/components/MutationForm";
 import PeriodFilter from "@/components/PeriodFilter";
 import { Card } from "@/components/ui/card";
@@ -99,10 +99,8 @@ export default function MutationsPage({ type }) {
   const masukOptions = useMemo(() => rows.filter((r) => r.jenis_transaksi === "masuk"), [rows]);
   const rowById = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, r])), [rows]);
 
-  const canModify = (m) => {
-    if (user?.role === "superadmin") return true;
-    return m.created_by === user?.id && (m.created_at || "").slice(0, 10) === todayStr();
-  };
+  // Semua user yang login boleh mengubah/menghapus mutasi siapa pun (tercatat di log audit).
+  const canModify = (m) => !!user && !!m;
 
   const openAdd = () => { setEditData(null); setFormOpen(true); };
   const openEdit = (m) => { setEditData(m); setFormOpen(true); };

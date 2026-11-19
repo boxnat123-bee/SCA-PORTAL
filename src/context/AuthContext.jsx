@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import api, { setSectionPassword } from "@/lib/api";
+import api from "@/lib/api";
 
 const AuthContext = createContext(null);
 
@@ -14,13 +14,11 @@ export function apiError(e, fallback = "Terjadi kesalahan. Coba lagi.") {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // undefined=loading, null=guest
-  const [sectionUnlocked, setSectionUnlocked] = useState(false);
 
   const loadMe = useCallback(async () => {
     try {
       const { data } = await api.get("/auth/me");
       setUser(data);
-      if (data.role === "superadmin") setSectionUnlocked(true);
     } catch {
       setUser((prev) => (prev === undefined ? null : prev));
     }
@@ -36,7 +34,6 @@ export function AuthProvider({ children }) {
       localStorage.setItem("sca_token", data.token);
     }
     setUser(data);
-    if (data.role === "superadmin") setSectionUnlocked(true);
     return data;
   };
 
@@ -45,16 +42,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("sca_token");
     localStorage.removeItem("stokku_token");
     setUser(null);
-    setSectionUnlocked(false);
-    setSectionPassword("");
   };
 
-  const unlockSection = async (password) => {
-    await api.post("/auth/verify-temp-password", { password });
-    setSectionPassword(password);
-    setSectionUnlocked(true);
-    return true;
-  };
 
   const isSuper = user?.role === "superadmin";
   const perms = {
@@ -62,7 +51,7 @@ export function AuthProvider({ children }) {
     canStokMutations: !!user,
     canStokReport: !!user,
     canStokDetail: isSuper,     // Admin/PIC TIDAK bisa akses Laporan Detail
-    canStokLogs: isSuper,       // via section-lock existing (Superadmin bebas)
+    canStokLogs: isSuper,       // Log & User khusus Superadmin
     canStokYearClose: isSuper,
     canHpp: isSuper,            // HPP HANYA Superadmin
     canPo: !!user,              // PO Tracker semua role
@@ -72,7 +61,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, sectionUnlocked, unlockSection, perms }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, perms }}>
       {children}
     </AuthContext.Provider>
   );

@@ -73,7 +73,7 @@ function App() {
                     <Route path="stok/lainnya" element={<OtherMutations />} />
                     <Route path="stok/laporan-stok" element={<StockReport />} />
                     <Route path="stok/laporan-detail" element={<RequireSuper><DetailReport /></RequireSuper>} />
-                    <Route path="stok/log-user" element={<LogsUsers />} />
+                    <Route path="stok/log-user" element={<RequireSuper><LogsUsers /></RequireSuper>} />
                     <Route path="stok/tutup-tahun" element={<RequireSuper><YearClose /></RequireSuper>} />
                     {/* HPP tools — superadmin only */}
                     <Route path="hpp" element={<RequireSuper><HppCalculator /></RequireSuper>} />

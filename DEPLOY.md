@@ -80,7 +80,6 @@ Semua variabel di bawah diisi di **Coolify → aplikasi → Environment Variable
 | `JWT_SECRET` | ✅ | `openssl rand -hex 32` | `9f3c…64 karakter hex` |
 | `SUPERADMIN_USERNAME` | ✅ (produksi) | Ditentukan sendiri | `Jeffsca` |
 | `SUPERADMIN_PASSWORD` | ✅ (produksi) | Ditentukan sendiri, kuat | `Sc@Prod!2025` |
-| `TEMP_ACCESS_PASSWORD` | ✅ (produksi) | Password buka section terkunci Admin/PIC | `BukaSection2025` |
 | `OWNER_EMAIL` | opsional | Email pemilik | `owner@domain.com` |
 | `R2_ACCOUNT_ID` | ✅ untuk foto PO | Cloudflare → R2 → Account ID (bagian 4.4) | `74c0…32 hex` |
 | `R2_ACCESS_KEY_ID` | ✅ untuk foto PO | R2 API Token (bagian 4.4) | `606a…` |
@@ -294,7 +293,6 @@ DB_NAME=laporan_stok_sca
 JWT_SECRET=<hasil openssl rand -hex 32>
 SUPERADMIN_USERNAME=Jeffsca
 SUPERADMIN_PASSWORD=<password kuat>
-TEMP_ACCESS_PASSWORD=<password kuat>
 OWNER_EMAIL=email@anda.com
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
@@ -309,7 +307,6 @@ R2_PUBLIC_URL=https://pub-xxxxxxxx.r2.dev
 | `DB_NAME` | ✅ | Ganti nama = database baru yang kosong |
 | `JWT_SECRET` | ✅ | `openssl rand -hex 32` (jalankan di VPS/laptop) |
 | `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD` | disarankan | Default `Jeffsca` / `jeff3131` — **wajib ganti di produksi** |
-| `TEMP_ACCESS_PASSWORD` | disarankan | Password pembuka section terproteksi untuk Admin/PIC |
 | `OWNER_EMAIL` | opsional | Disimpan di profil superadmin |
 | `R2_*` | untuk foto PO | Bagian 4.5 |
 
@@ -402,7 +399,6 @@ dan idempotent:
 
 - Membuat **index**: `users.username` (unique), index `year` mutasi, index tanggal log.
 - **Seed superadmin** sesuai `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD`.
-- **Seed password akses sementara** sesuai `TEMP_ACCESS_PASSWORD`.
 
 Mengubah `SUPERADMIN_PASSWORD` lalu **Redeploy** akan menyinkronkan password superadmin
 di database. Mengubah `SUPERADMIN_USERNAME` membuat superadmin **baru** (yang lama tetap ada).
@@ -457,7 +453,6 @@ client, **jangan** jalankan seed ini (atau gunakan `DB_NAME` berbeda).
 - [ ] `MONGO_URL` menunjuk database **fresh** (cluster baru atau `DB_NAME` baru).
 - [ ] `SUPERADMIN_USERNAME` & `SUPERADMIN_PASSWORD` final & kuat (bukan default).
 - [ ] `JWT_SECRET` baru (bukan bekas masa testing).
-- [ ] `TEMP_ACCESS_PASSWORD` diganti dari default.
 - [ ] Token R2 dibatasi ke bucket `sca-po-photos`; kredensial lama (jika pernah bocor) di-**rotate**:
       Cloudflare → Manage R2 API Tokens → *Roll* / hapus & buat baru → update env → Restart.
 - [ ] Password Atlas di-rotate bila pernah dibagikan (Database Access → Edit → Autogenerate).

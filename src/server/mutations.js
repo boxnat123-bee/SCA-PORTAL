@@ -1,4 +1,4 @@
-import { getDb, COLLECTION_BY_TYPE, stripId, nowIso, todayStr } from "@/server/mongo";
+import { getDb, COLLECTION_BY_TYPE, stripId, nowIso } from "@/server/mongo";
 import { HttpError } from "@/server/http";
 import {
   computeHargaPerRim, currentPaperStockForKey, currentInkStockForKey, currentOtherStockForKey,
@@ -87,14 +87,12 @@ export function buildDoc(type, data) {
   };
 }
 
+/**
+ * Semua user yang login (Superadmin & Admin/PIC) boleh mengubah/menghapus mutasi
+ * siapa pun, kapan pun. Setiap perubahan & penghapusan tetap tercatat di log audit.
+ */
 export function canModify(current, mutation) {
-  if (current.role === "superadmin") return [true, ""];
-  if (mutation.created_by !== current.id) {
-    return [false, "Anda hanya bisa mengubah mutasi yang Anda input sendiri"];
-  }
-  if (String(mutation.created_at || "").slice(0, 10) !== todayStr()) {
-    return [false, "Mutasi hanya bisa diubah/hapus di hari yang sama saat dibuat"];
-  }
+  if (!current || !mutation) return [false, "Tidak diizinkan"];
   return [true, ""];
 }
 

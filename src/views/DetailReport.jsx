@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
 import { formatRupiah, formatDateID } from "@/lib/format";
-import SectionGate from "@/components/SectionGate";
 import PeriodFilter from "@/components/PeriodFilter";
 import StatCard from "@/components/StatCard";
 import ChartBox from "@/components/ChartBox";
@@ -102,22 +101,9 @@ function Inner() {
     } catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); return false; }
   };
 
-  const confirmDownload = async () => {
-    try {
-      await api.post("/auth/verify-temp-password", { password: pdfPwd });
-    } catch (e) {
-      toast.error(apiError(e, "Password salah")); return;
-    }
-    await runDownload(pdfKind);
-  };
 
-  // Superadmin punya akses penuh: langsung unduh tanpa dialog password.
-  // Admin/PIC tetap wajib memasukkan password akses sementara.
-  const openPdf = (kind) => {
-    setPdfKind(kind);
-    if (isSuper) { runDownload(kind); return; }
-    setPdfPwd(""); setPdfOpen(true);
-  };
+  // Halaman ini khusus Superadmin: langsung unduh.
+  const openPdf = (kind) => { runDownload(kind); };
 
   const cmp = data?.comparison;
 
@@ -354,25 +340,10 @@ function Inner() {
         </>
       )}
 
-      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
-        <DialogContent data-testid="pdf-password-dialog">
-          <DialogHeader><DialogTitle>Konfirmasi Password</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Masukkan password akses sementara untuk mengunduh laporan bernominal ini.</p>
-          <div className="space-y-1.5">
-            <Label>Password</Label>
-            <Input type="password" value={pdfPwd} data-testid="pdf-password-input" onChange={(e) => setPdfPwd(e.target.value)} autoFocus
-              onKeyDown={(e) => e.key === "Enter" && confirmDownload()} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPdfOpen(false)}>Batal</Button>
-            <Button data-testid="pdf-password-confirm" onClick={confirmDownload}>Unduh PDF</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </PageContainer>
   );
 }
 
 export default function DetailReport() {
-  return <SectionGate title="Laporan Detail (Nominal & Grafik)"><Inner /></SectionGate>;
+  return <Inner />;
 }

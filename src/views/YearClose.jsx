@@ -3,7 +3,6 @@ import { CalendarX, FileDown, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
-import SectionGate from "@/components/SectionGate";
 import { Card } from "@/components/ui/card";
 import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -49,17 +48,9 @@ function Inner() {
     } catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); }
   };
 
-  const dlNominal = async () => {
-    try { await api.post("/auth/verify-temp-password", { password: pwd }); }
-    catch (e) { toast.error(apiError(e, "Password salah")); return; }
-    await runNominalDownload();
-  };
 
-  // Superadmin: langsung unduh. Admin/PIC: minta password akses sementara.
-  const requestNominal = () => {
-    if (isSuper) { runNominalDownload(); return; }
-    setPwd(""); setPwdOpen(true);
-  };
+  // Halaman ini khusus Superadmin: langsung unduh.
+  const requestNominal = () => { runNominalDownload(); };
 
   const allDone = steps.paper && steps.ink && steps.nominal;
 
@@ -125,19 +116,6 @@ function Inner() {
         {!allDone && <p className="text-xs text-muted-foreground">Unduh semua laporan terlebih dahulu untuk mengaktifkan tombol ini.</p>}
       </Card>
 
-      <Dialog open={pwdOpen} onOpenChange={setPwdOpen}>
-        <DialogContent data-testid="year-pdf-password-dialog">
-          <DialogHeader><DialogTitle>Konfirmasi Password</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Masukkan password akses sementara untuk laporan bernominal.</p>
-          <div className="space-y-1.5"><Label>Password</Label>
-            <Input type="password" value={pwd} data-testid="year-pdf-password-input" autoFocus onChange={(e) => setPwd(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && dlNominal()} /></div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPwdOpen(false)}>Batal</Button>
-            <Button data-testid="year-pdf-confirm" onClick={dlNominal}>Unduh</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent data-testid="year-close-confirm-dialog">
@@ -160,5 +138,5 @@ function Inner() {
 }
 
 export default function YearClose() {
-  return <SectionGate title="Tutup Tahun (Reset Data)"><Inner /></SectionGate>;
+  return <Inner />;
 }

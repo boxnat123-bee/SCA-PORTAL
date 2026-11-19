@@ -16,9 +16,9 @@ Antarmuka sepenuhnya Bahasa Indonesia, responsive, mendukung mode terang & gelap
 | **Mutasi Tinta** | Masuk / Keluar / Retur dengan harga per Kg |
 | **Mutasi Lain** | Barang bebas (nama + satuan sendiri, mis. box/pcs/roll) dengan harga per satuan |
 | **Laporan Stok** | Rekap stok berjalan per item **beserta rincian per supplier**, ekspor PDF |
-| **Laporan Detail** | Nominal rupiah, komposisi nominal, tren nilai stok bulanan, perbandingan dengan periode sebelumnya, rekap PPN per bulan, ekspor PDF *(section terproteksi)* |
-| **Log & User** | Log aktivitas login/logout, log audit edit/hapus, CRUD user, aktif/nonaktif user, ubah password akses sementara *(section terproteksi)* |
-| **Tutup Tahun** | Wajib unduh PDF laporan dulu, baru reset seluruh data mutasi. Data user & log tetap tersimpan *(section terproteksi)* |
+| **Laporan Detail** | Nominal rupiah, komposisi nominal, tren nilai stok bulanan, perbandingan dengan periode sebelumnya, rekap PPN per bulan, ekspor PDF *(khusus Superadmin)* |
+| **Log & User** | Log aktivitas login/logout, log audit edit/hapus, CRUD user, aktif/nonaktif user *(khusus Superadmin)* |
+| **Tutup Tahun** | Wajib unduh PDF laporan dulu, baru reset seluruh data mutasi. Data user & log tetap tersimpan *(khusus Superadmin)* |
 | **Kalkulator HPP** | Perhitungan harga pokok produksi cetak *(khusus Superadmin)* |
 | **PO Tracker** | Dashboard PO, daftar PO, tahapan/jadwal produksi, kalender jadwal |
 | **Stok Klien** | Stok barang **titipan klien**: hirarki Klien → PO → Item → Mutasi masuk/keluar, riwayat mutasi ber-filter, ekspor PDF |
@@ -29,7 +29,7 @@ Aturan bisnis penting:
 - Stok **tidak boleh minus** — transaksi Keluar ditolak bila melebihi stok tersedia.
 - Nominal stok dihitung dengan **rata-rata tertimbang (weighted average)** harga masuk.
 - **Superadmin** bebas mengedit/menghapus mutasi apa pun.
-  **Admin/PIC** hanya bisa mengubah mutasi miliknya sendiri **dan** di hari yang sama saat dibuat.
+  **Admin/PIC** juga bisa mengubah/menghapus mutasi & PO milik siapa pun (semua tercatat di log audit).
 - Auto-logout setelah **60 menit** tidak aktif, dengan dialog peringatan di menit ke-58.
 - Semua perubahan & penghapusan mutasi tercatat di **log audit**.
 
@@ -54,9 +54,7 @@ Aturan bisnis 2 tool klien:
 | **Superadmin** | Semua modul, termasuk semua nominal rupiah dan kedua tool klien. Tanpa password tambahan |
 | **Admin/PIC** | Dashboard, semua Mutasi, Laporan Stok, PO Tracker, **Stok Klien**. Nominal rupiah **disembunyikan** (kartu tampil "Terkunci"). **Tidak** punya akses Kalkulator HPP & Jatuh Tempo Klien |
 
-Section terproteksi (**Laporan Detail**, **Log & User**, **Tutup Tahun**) bisa dibuka oleh
-Admin/PIC dengan **password akses sementara**, berlaku selama sesi login saat itu
-(dikirim ke API lewat header `X-Section-Password`).
+Section **Laporan Detail**, **Log & User**, dan **Tutup Tahun** khusus Superadmin.
 
 ---
 
@@ -148,7 +146,6 @@ Opsional (punya nilai default, dipakai saat seed pertama):
 | --- | --- |
 | `SUPERADMIN_USERNAME` | `Jeffsca` |
 | `SUPERADMIN_PASSWORD` | `jeff3131` |
-| `TEMP_ACCESS_PASSWORD` | `superadminsementara` |
 | `OWNER_EMAIL` | *(kosong)* |
 | `NEXT_PUBLIC_API_BASE` | `/api` (isi hanya bila API dipisah dari frontend) |
 
@@ -188,7 +185,7 @@ Ringkasan — langkah detail (Atlas, Cloudflare R2, domain, troubleshooting) ada
 2. Coolify → **Project** → **+ New Resource** → **Public/Private Repository** → pilih repo & branch `main`.
 3. **Build Pack: Dockerfile** (Dockerfile ada di root). Port: `3000`.
 4. **Environment Variables**: isi semua key di `.env.example`
-   (`MONGO_URL`, `DB_NAME`, `JWT_SECRET`, `SUPERADMIN_*`, `TEMP_ACCESS_PASSWORD`, `R2_*`).
+   (`MONGO_URL`, `DB_NAME`, `JWT_SECRET`, `SUPERADMIN_*`, `R2_*`).
 5. MongoDB Atlas → **Network Access** → tambahkan **IP publik VPS** (atau `0.0.0.0/0`).
 6. **Domains**: `https://stok.domain-anda.com` → DNS A record ke IP VPS → **Deploy**.
    SSL Let's Encrypt otomatis oleh Traefik bawaan Coolify.
@@ -199,8 +196,6 @@ Ringkasan — langkah detail (Atlas, Cloudflare R2, domain, troubleshooting) ada
 - [ ] `JWT_SECRET` acak dan **berbeda** dari yang dipakai saat development.
 - [ ] `SUPERADMIN_PASSWORD` bukan nilai default.
 - [ ] Password user MongoDB Atlas kuat (bukan sama dengan username).
-- [ ] `TEMP_ACCESS_PASSWORD` diganti, lalu bisa diubah lagi kapan pun dari
-      menu **Log & User → Password Akses** tanpa perlu redeploy.
 - [ ] Token R2 dibatasi ke bucket `sca-po-photos` saja (Object Read & Write).
 
 ---
@@ -264,8 +259,7 @@ Semua endpoint diawali `/api`. Autentikasi memakai cookie httpOnly
 `{type}` = `paper` · `ink` · `other`
 `{kind}` = `paper-mutations` · `ink-mutations` · `other-mutations` · `stock-ringkas` · `detail` · `stock-nominal`
 
-Keterangan akses: **login** = perlu token · **section** = superadmin, atau role lain
-dengan header `X-Section-Password` yang benar · **superadmin** = khusus superadmin.
+Keterangan akses: **login** = perlu token · **section** / **superadmin** = khusus superadmin.
 
 Error selalu dikembalikan sebagai `{ "detail": "pesan dalam Bahasa Indonesia" }`.
 
