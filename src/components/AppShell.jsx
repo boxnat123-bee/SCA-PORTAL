@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList,
   Users, CalendarX, Menu, X, Calculator,
-  ListTodo, CalendarDays, Globe, Search, Boxes, Receipt, PieChart,
+  ListTodo, CalendarDays, Globe, Search, Boxes, Receipt, PieChart, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -77,6 +77,7 @@ export default function AppShell() {
     { to: "/po/pos", label: L("Daftar PO", "PO List"), icon: ListTodo },
     { to: "/po/kalender", label: L("Kalender Produksi", "Production Calendar"), icon: CalendarDays },
   ];
+  const produksiResetItem = isSuper ? [{ to: "/po/hapus-data", label: L("Hapus Data Produksi", "Clear Production Data"), icon: Trash2 }] : [];
   const klienMenu = perms.canStokKlien
     ? [{ to: "/stok-klien", label: L("Stok Klien", "Client Stock"), icon: Boxes, end: true }]
     : [];
@@ -122,6 +123,7 @@ export default function AppShell() {
         <div className="space-y-0.5">
           {poMenu.map((item) => <NavItem key={item.to} item={item} />)}
           {klienMenu.map((item) => <NavItem key={item.to} item={item} />)}
+          {produksiResetItem.map((item) => <NavItem key={item.to} item={item} />)}
         </div>
         {(tempoMenu.length > 0 || hppMenu.length > 0) && (
           <>

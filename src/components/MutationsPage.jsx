@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Plus, Search, FileDown, Pencil, Trash2, Inbox, History,
+  Plus, Search, FileDown, Pencil, Trash2, Inbox,
   ArrowDownToLine, ArrowUpFromLine,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -484,8 +484,8 @@ export default function MutationsPage({ type }) {
                     const isSel = wide && selected?.id === it.id;
                     const low = Number(it.stock) <= 0;
                     return (
-                      <tr key={it.id} data-testid={`item-row-${it.id}`} onClick={() => wide && setSelectedId(it.id)}
-                        className={`border-b border-border/60 last:border-0 ${wide ? "cursor-pointer" : ""} ${isSel ? "bg-accent/60" : "hover:bg-secondary/40"}`}>
+                      <tr key={it.id} data-testid={`item-row-${it.id}`} onClick={() => openDetail(it)} title="Klik untuk melihat detail & riwayat"
+                        className={`cursor-pointer border-b border-border/60 last:border-0 ${isSel ? "bg-accent/60" : "hover:bg-secondary/40"}`}>
                         <td className="px-3.5 py-3">
                           <div className="font-semibold">{nameOf(it)}</div>
                           {specOf(it) && <div className="text-xs text-muted-foreground">{specOf(it)}</div>}
@@ -506,10 +506,6 @@ export default function MutationsPage({ type }) {
                               className="h-8 w-8 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 hover:text-rose-800 dark:text-rose-400"
                               onClick={() => setMove({ item: it, jenis: "keluar" })} data-testid={`keluar-btn-${it.id}`}>
                               <ArrowUpFromLine className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" title="Detail / Riwayat" aria-label="Detail" className="h-8 w-8"
-                              onClick={() => openDetail(it)} data-testid={`detail-btn-${it.id}`}>
-                              <History className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon" title="Ubah item" aria-label="Ubah item" className="h-8 w-8 text-muted-foreground"
                               onClick={() => setItemDlg({ open: true, item: it })} data-testid={`edit-item-${it.id}`}>

@@ -39,7 +39,7 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
                   className="h-4 w-4 shrink-0 rounded border-border accent-primary cursor-pointer" />
                 <button onClick={() => onSelect && onSelect(c.key)}
                   className="flex-1 flex items-center justify-between gap-3 group text-left">
-                  <span className={`text-sm transition-colors duration-200 ${on ? "text-muted-foreground group-hover:text-primary" : "text-muted-foreground/40 line-through"}`}>{c.label}</span>
+                  <span className={`text-sm transition-colors duration-200 ${on ? "text-muted-foreground group-hover:text-primary" : "text-muted-foreground/40 line-through"}`}>{c.label}{c.manual && <span className="ml-1.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">manual</span>}</span>
                   <span className={`tabular-nums text-sm ${on ? "" : "text-muted-foreground/40"}`}>{formatRp(c.value)}</span>
                 </button>
               </div>

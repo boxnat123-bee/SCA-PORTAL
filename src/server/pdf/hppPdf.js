@@ -9,6 +9,20 @@ function rp(v) {
   return (neg ? "- " : "") + "Rp " + s;
 }
 
+function wrap(font, text, size, maxW) {
+  const out = [];
+  for (const para of String(text || "").split(/\r?\n/)) {
+    let line = "";
+    for (const w of para.split(/\s+/)) {
+      const t = line ? `${line} ${w}` : w;
+      if (font.widthOfTextAtSize(t, size) > maxW && line) { out.push(line); line = w; } else line = t;
+    }
+    out.push(line);
+  }
+  return out;
+}
+const clean = (t) => String(t ?? "").replace(/[^\n\x20-\x7E\u00A0-\u00FF]/g, (ch) => ({ "×": "x", "÷": ":", "–": "-", "—": "-", "→": "->", "’": "'", "“": '"', "”": '"' }[ch] ?? "?"));
+
 export async function buildHppPdf({ name, customer, notes, company, result }) {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -43,6 +57,17 @@ export async function buildHppPdf({ name, customer, notes, company, result }) {
   });
   y -= 10;
 
+  // Kotak Catatan (di bawah tanggal, di atas Rincian)
+  if (notes) {
+    const lines = wrap(font, clean(notes), 9.5, 500);
+    const boxH = 22 + lines.length * 13;
+    page.drawRectangle({ x: marginX, y: y - boxH + 8, width: 520, height: boxH, borderColor: grid, borderWidth: 1, color: rgb(0.973, 0.98, 0.988) });
+    page.drawText("Catatan", { x: marginX + 10, y: y - 6, font: bold, size: 9.5, color: navy });
+    let ly = y - 20;
+    for (const l of lines) { page.drawText(l, { x: marginX + 10, y: ly, font, size: 9.5 }); ly -= 13; }
+    y -= boxH + 14;
+  }
+
   page.drawText("Rincian Komponen Biaya (per Pcs)", { x: marginX, y, font: bold, size: 12, color: navy });
   y -= 8;
 
@@ -74,7 +99,14 @@ export async function buildHppPdf({ name, customer, notes, company, result }) {
       y = 810;
       drawRow("No", "Komponen", null, true);
     }
-    drawRow(i + 1, c.label, c.value);
+    drawRow(i + 1, c.manual ? `${clean(c.label)} (hitung sendiri)` : clean(c.label), c.value);
+    if (c.manual && c.rumus) {
+      for (const l of wrap(font, clean(c.rumus), 8, 380)) {
+        page.drawText(l, { x: colX.label + 8, y: y - 2, font, size: 8, color: muted });
+        y -= 11;
+      }
+      y -= 2;
+    }
   });
 
   y -= 8;
@@ -94,24 +126,6 @@ export async function buildHppPdf({ name, customer, notes, company, result }) {
     page.drawText(txt, { x: 520 + marginX - vw - 4, y, font: isBold ? bold : font, size: 10, color: isBold ? navy : rgb(0, 0, 0) });
     y -= 16;
   });
-
-  if (notes) {
-    y -= 10;
-    page.drawText("Catatan", { x: marginX, y, font: bold, size: 11, color: navy });
-    y -= 14;
-    const words = String(notes).split(/\s+/);
-    let line = "";
-    for (const w of words) {
-      const test = line + (line ? " " : "") + w;
-      if (font.widthOfTextAtSize(test, 10) > 500) {
-        page.drawText(line, { x: marginX, y, font, size: 10 });
-        line = w;
-        y -= 14;
-        if (y < 60) break;
-      } else line = test;
-    }
-    if (line) { page.drawText(line, { x: marginX, y, font, size: 10 }); y -= 14; }
-  }
 
   y -= 20;
   page.drawText("Dokumen dibuat otomatis oleh Kalkulator HPP SCA.", { x: marginX, y, font, size: 9, color: muted });

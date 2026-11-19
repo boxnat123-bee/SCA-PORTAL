@@ -8,9 +8,53 @@ import { calcAll, normalizeWarna } from "@/lib/hppCalc";
 import { formatRp } from "@/lib/format";
 import { MODULES, SUMMARY_ICON } from "@/components/hpp/modules";
 import SummaryPanel from "@/components/hpp/SummaryPanel";
+import MoneyInput from "@/components/MoneyInput";
 import * as api from "@/lib/hppApi";
 
 const NAV = [{ id: "summary", label: "Ringkasan", icon: SUMMARY_ICON }, ...MODULES];
+
+// Komponen biaya per tahap (modul Pisau & Papan punya 2 komponen).
+const MODULE_COMPONENTS = {
+  kertas: [["kertas", "Kertas"]], warna: [["warna", "Warna"]], ongkosCetak: [["ongkosCetak", "Ongkos Cetak"]],
+  design: [["design", "Design"]], ctp: [["ctp", "CTP"]], finishing: [["finishing", "Finishing"]],
+  laminasi: [["laminasi", "Single Face"]], lem: [["lem", "Lem"]],
+  pisauPapan: [["pisauPlong", "Pisau Plong"], ["papanPlong", "Papan Plong"]],
+  plong: [["plong", "Plong"]], ongkosPlong: [["ongkosPlong", "Jasa Ongkos Plong"]],
+  other: [["other", "Transportasi / Potong / Packing"]],
+};
+
+/** Opsi "Penghitungan sendiri": rumus manual + Biaya/Pcs yang menggantikan hasil otomatis. */
+function ManualBox({ compKey, label, value, onChange, showLabel }) {
+  const m = value || {};
+  const set = (k, v) => onChange({ ...m, [k]: v });
+  return (
+    <div className={`mb-5 rounded-lg border p-3.5 ${m.on ? "border-primary/40 bg-primary/[0.04]" : "border-border bg-secondary/40"}`} data-testid={`manual-${compKey}`}>
+      <label className="flex cursor-pointer items-center gap-2.5 text-sm font-semibold">
+        <input type="checkbox" className="h-4 w-4 accent-primary" checked={!!m.on} onChange={(e) => set("on", e.target.checked)} />
+        Penghitungan sendiri{showLabel ? ` — ${label}` : ""}
+        <span className="text-xs font-normal text-muted-foreground">(Biaya/Pcs manual menggantikan hasil otomatis)</span>
+      </label>
+      {m.on && (
+        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_220px]">
+          <div>
+            <div className="mb-1.5 text-xs font-semibold text-muted-foreground">Perhitungan</div>
+            <textarea rows={2} value={m.rumus || ""} onChange={(e) => set("rumus", e.target.value)}
+              placeholder="cth: (2 kg × Rp 85.000 + Rp 150.000) ÷ 5.000 pcs"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25" />
+          </div>
+          <div>
+            <div className="mb-1.5 text-xs font-semibold text-muted-foreground">Biaya / Pcs</div>
+            <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25">
+              <span className="text-sm text-muted-foreground">Rp</span>
+              <MoneyInput value={m.biaya ?? ""} onChange={(v) => set("biaya", v)} placeholder="0"
+                className="w-full bg-transparent text-right text-sm font-semibold tabular-nums outline-none" />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Draf kalkulator disimpan di browser agar isian tidak hilang saat pindah ke menu lain / refresh.
 const DRAFT_KEY = "sca_hpp_draft_v1";
@@ -60,7 +104,8 @@ export default function HppCalculator() {
     name: meta.name || "HPP", customer: meta.customer, notes: meta.notes,
     inputs: state,
     result: {
-      components: res.components, subtotal: res.subtotal,
+      components: res.components.map((c) => ({ key: c.key, label: c.label, value: c.value, enabled: c.enabled, manual: c.manual, rumus: c.rumus })),
+      subtotal: res.subtotal,
       labaPct: res.labaPct, bungaPct: res.bungaPct, ppnPct: res.ppnPct,
       laba: res.laba, bunga: res.bunga, ppn: res.ppn, final: res.final,
     },
@@ -177,6 +222,13 @@ export default function HppCalculator() {
         {/* Main */}
         <main className="flex-1 min-w-0 flex flex-col 2xl:flex-row gap-6">
           <div className="flex-1 min-w-0">
+            {/* Catatan — tampil di PDF (kotak di bawah tanggal, di atas Rincian Komponen Biaya) */}
+            <div className="mb-4 rounded-xl border border-border/70 bg-card p-4 shadow-soft" data-testid="hpp-notes-card">
+              <label htmlFor="hpp-notes" className="text-sm font-semibold">Catatan <span className="font-normal text-muted-foreground">(tampil di PDF)</span></label>
+              <textarea id="hpp-notes" rows={2} value={meta.notes || ""} onChange={(e) => setMeta((m) => ({ ...m, notes: e.target.value }))}
+                placeholder="cth: Harga berlaku 14 hari, belum termasuk ongkos kirim."
+                className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25" />
+            </div>
             <AnimatePresence mode="wait">
               <motion.div key={active}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
@@ -201,7 +253,14 @@ export default function HppCalculator() {
                     <p className="text-sm text-muted-foreground">Klik komponen pada panel kanan untuk membuka & mengubah inputnya. Semua perhitungan langsung otomatis.</p>
                   </>
                 ) : (
-                  <ActiveModule.Component s={state[active]} u={(f, v) => update(active, f, v)} r={res[active]} />
+                  <>
+                    {(MODULE_COMPONENTS[active] || []).map(([key, label], _i, arr) => (
+                      <ManualBox key={key} compKey={key} label={label} showLabel={arr.length > 1}
+                        value={state.manual?.[key]}
+                        onChange={(v) => setState((p) => ({ ...p, manual: { ...(p.manual || {}), [key]: v } }))} />
+                    ))}
+                    <ActiveModule.Component s={state[active]} u={(f, v) => update(active, f, v)} r={res[active]} />
+                  </>
                 )}
               </motion.div>
             </AnimatePresence>

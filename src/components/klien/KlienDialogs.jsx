@@ -101,7 +101,7 @@ export function PODialog({ open, onOpenChange, kliens, fixedKlien, po, onSaved }
   useEffect(() => {
     if (!open) return;
     setKlienId(fixedKlien?.id || po?.klien_id || "");
-    setNewKlien("");
+    setNewKlien("");  // nama klien diketik manual (selalu kartu klien baru)
     setNoPo(po?.no_po || "");
     setTanggal(po?.tanggal_po?.slice(0, 10) || today());
   }, [open, po, fixedKlien]);
@@ -118,10 +118,10 @@ export function PODialog({ open, onOpenChange, kliens, fixedKlien, po, onSaved }
         await kapi.updateKlienPo(po.id, { no_po: noPo, tanggal_po: tanggal });
         toast.success("PO berhasil diperbarui");
       } else {
-        let kid = fixedKlien?.id || klienId;
-        if (klienId === "__new") {
-          if (!newKlien.trim()) { setSaving(false); return toast.error("Nama klien baru wajib diisi"); }
-          const created = await kapi.createKlien({ nama: newKlien });
+        let kid = fixedKlien?.id;
+        if (!kid) {
+          if (!newKlien.trim()) { setSaving(false); return toast.error("Nama klien wajib diisi"); }
+          const created = await kapi.createKlien({ nama: newKlien.trim() });
           kid = created.id;
         }
         if (!kid) { setSaving(false); return toast.error("Pilih klien terlebih dahulu"); }
@@ -142,30 +142,16 @@ export function PODialog({ open, onOpenChange, kliens, fixedKlien, po, onSaved }
       <DialogContent data-testid="klien-po-dialog">
         <DialogHeader>
           <DialogTitle className="font-display">
-            {isEdit ? `Edit PO No. ${po?.no_po}` : fixedKlien ? `Tambah PO — ${fixedKlien.nama}` : "Tambah Klien / PO Baru"}
+            {isEdit ? `Edit PO No. ${po?.no_po}` : fixedKlien ? `Tambah PO — ${fixedKlien.nama}` : "Tambah Stok Klien"}
           </DialogTitle>
           <DialogDescription>Lengkapi data Purchase Order (No PO dan tanggal).</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           {showKlienSelect && (
             <div className="space-y-1.5">
-              <Label>Klien</Label>
-              <Select value={klienId} onValueChange={setKlienId}>
-                <SelectTrigger data-testid="po-klien-select"><SelectValue placeholder="Pilih klien..." /></SelectTrigger>
-                <SelectContent>
-                  {(kliens || []).map((k) => (
-                    <SelectItem key={k.id} value={k.id} data-testid={`po-klien-option-${k.id}`}>{k.nama}</SelectItem>
-                  ))}
-                  <SelectItem value="__new" data-testid="po-klien-option-new">+ Klien baru...</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {showKlienSelect && klienId === "__new" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="po-new-klien">Nama Klien Baru</Label>
-              <Input id="po-new-klien" data-testid="po-new-klien-input" value={newKlien}
-                onChange={(e) => setNewKlien(e.target.value)} placeholder="Contoh: CV Sumber Rezeki" />
+              <Label htmlFor="po-new-klien">Klien</Label>
+              <Input id="po-new-klien" data-testid="po-new-klien-input" value={newKlien} autoFocus
+                onChange={(e) => setNewKlien(e.target.value)} placeholder="Ketik nama klien, cth: CV Sumber Rezeki" />
             </div>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
@@ -184,7 +170,7 @@ export function PODialog({ open, onOpenChange, kliens, fixedKlien, po, onSaved }
             <Button type="button" variant="outline" className="rounded-full"
               onClick={() => onOpenChange(false)} data-testid="po-cancel-btn">Batal</Button>
             <Button type="submit" className="rounded-full" disabled={saving} data-testid="po-submit-btn">
-              {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Tambah PO"}
+              {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : fixedKlien ? "Tambah PO" : "Tambah Stok Klien"}
             </Button>
           </DialogFooter>
         </form>
@@ -466,7 +452,7 @@ const kShow = (f, v) => {
   return String(v);
 };
 
-export function KlienDetailDialog({ open, onOpenChange, item, po, klien, onChanged }) {
+export function KlienDetailDialog({ open, onOpenChange, item, po, klien, onChanged, inline = false, refreshKey }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -475,25 +461,16 @@ export function KlienDetailDialog({ open, onOpenChange, item, po, klien, onChang
   const load = useCallback(async () => {
     if (!item?.id) return;
     setLoading(true);
-    try { setRows(await kapi.listKlienMutations({ item_id: item.id })); }
+    try { setRows((await kapi.listKlienMutations({ item_id: item.id })) || []); }
     catch (err) { toast.error(apiError(err, "Gagal memuat riwayat")); }
     finally { setLoading(false); }
   }, [item?.id]);
-  useEffect(() => { if (open) load(); }, [open, load]);
+  useEffect(() => { if (open || inline) load(); }, [open, inline, load, refreshKey]);
 
   const changed = () => { load(); onChanged?.(); };
 
-  return (
+  const listBody = (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" data-testid="klien-detail-dialog">
-          <DialogHeader>
-            <DialogTitle className="font-display">Detail Mutasi — {item?.jenis_item}</DialogTitle>
-            <DialogDescription>
-              {klien?.nama} · PO No. {po?.no_po} · Stok saat ini{" "}
-              <b>{fmtQty(item?.kuantiti)} {item?.satuan}</b>
-            </DialogDescription>
-          </DialogHeader>
           {loading && rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">Memuat…</p>
           ) : rows.length === 0 ? (
@@ -539,6 +516,44 @@ export function KlienDetailDialog({ open, onOpenChange, item, po, klien, onChang
               })}
             </ul>
           )}
+    </>
+  );
+
+  // Mode panel samping (terbuka otomatis saat baris item diklik)
+  if (inline) {
+    return (
+      <>
+        <div className="text-xs text-muted-foreground">Detail item</div>
+        <div className="mt-0.5 text-base font-bold leading-snug">{item?.jenis_item}</div>
+        <div className="mt-1 text-xs text-muted-foreground">{klien?.nama} · PO No. {po?.no_po}</div>
+        <div className="mt-3 rounded-lg bg-secondary/70 px-3 py-2.5">
+          <div className="text-[11px] text-muted-foreground">Stok saat ini</div>
+          <div className="text-lg font-bold tabular-nums">{fmtQty(item?.kuantiti)} <span className="text-xs font-medium text-muted-foreground">{item?.satuan}</span></div>
+        </div>
+        <div className="my-4 h-px bg-border" />
+        <div className="mb-2 text-xs font-semibold tracking-[0.05em] text-muted-foreground">RIWAYAT · {rows.length} MUTASI</div>
+        {listBody}
+        <MutationDialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}
+          item={item} po={po} klien={klien} mutation={editing ? { ...editing, jenis_item: item?.jenis_item } : null} onSaved={changed} />
+        <ConfirmDeleteDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}
+          title="Hapus mutasi ini?" description="Stok item akan dihitung ulang otomatis."
+          onConfirm={() => kapi.deleteKlienMutation(deleting.id)} onDeleted={changed} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" data-testid="klien-detail-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-display">Detail Mutasi — {item?.jenis_item}</DialogTitle>
+            <DialogDescription>
+              {klien?.nama} · PO No. {po?.no_po} · Stok saat ini{" "}
+              <b>{fmtQty(item?.kuantiti)} {item?.satuan}</b>
+            </DialogDescription>
+          </DialogHeader>
+          {listBody}
         </DialogContent>
       </Dialog>
       <MutationDialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}

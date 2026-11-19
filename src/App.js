@@ -28,6 +28,7 @@ const PoList = lazy(() => import("@/views/po/PoList"));
 const PoForm = lazy(() => import("@/views/po/PoForm"));
 const PoDetail = lazy(() => import("@/views/po/PoDetail"));
 const PoCalendar = lazy(() => import("@/views/po/PoCalendar"));
+const ProduksiReset = lazy(() => import("@/views/po/ProduksiReset"));
 // Stok Klien (tool baru)
 const KlienDashboard = lazy(() => import("@/views/klien/Dashboard"));
 // Jatuh Tempo Klien (tool baru — Superadmin only)
@@ -81,6 +82,7 @@ function App() {
                     <Route path="po/pos/:id" element={<PoDetail />} />
                     <Route path="po/pos/:id/edit" element={<PoForm />} />
                     <Route path="po/kalender" element={<PoCalendar />} />
+                    <Route path="po/hapus-data" element={<ProduksiReset />} />
                     {/* Stok Klien tools — Superadmin + Admin/PIC */}
                     <Route path="stok-klien" element={<KlienDashboard />} />
                     {/* Jatuh Tempo Klien tools — Superadmin only */}

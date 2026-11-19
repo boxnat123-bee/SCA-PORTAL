@@ -143,9 +143,8 @@ export function calcOther(o) {
  * Uk Area Cetak (patokan = Ukuran Cetak yang diketik):
  *   Ukuran Kertas P    = Cetak P + Selisih Kres P + Anleg P
  *   Ukuran Kertas L    = Cetak L + Selisih Kres L
- *   Ukuran Single Face = Ukuran Kertas − Selisih Single Face (P & L)
- * Contoh: Cetak 81,5 x 54,5 · Kres P 0,1 + Anleg 1,4 · Kres L 2 · SF 0,7
- *         → Kertas 83 x 56,5 → Single Face 82,3 x 55,8 (selisih SF ke Cetak 0,8 x 1,3)
+ *   Ukuran Single Face = Ukuran Cetak + Tambahan Single Face (P & L)
+ * Contoh: Cetak 45 x 62 · Tambahan SF 1,7 → Single Face 46,7 x 63,7
  */
 const r4 = (v) => Math.round(v * 10000) / 10000; // hindari 82.30000000000001
 export function calcUkArea(a) {
@@ -153,8 +152,9 @@ export function calcUkArea(a) {
   const cetakL = n(a.cetakL);
   const kertasP = r4(cetakP + n(a.kresP) + n(a.anlegP));
   const kertasL = r4(cetakL + n(a.kresL));
-  const sfP = r4(kertasP - n(a.sf));
-  const sfL = r4(kertasL - n(a.sf));
+  // Single Face = Ukuran Cetak + tambahan SF (berlaku ke P dan L). Cth: 45 x 62 + 1,7 → 46,7 x 63,7
+  const sfP = r4(cetakP + n(a.sf));
+  const sfL = r4(cetakL + n(a.sf));
   return {
     planoP: n(a.planoP), planoL: n(a.planoL),
     cetakP, cetakL, kertasP, kertasL, sfP, sfL,
@@ -195,7 +195,13 @@ export function calcAll(s) {
     { key: "plong", label: "Plong", value: plong.output },
     { key: "ongkosPlong", label: "Jasa Ongkos Plong", value: ongkosPlong.output },
     { key: "other", label: "Transportasi / Potong / Packing", value: other.output },
-  ].map((c) => ({ ...c, enabled: isOn(c.key), value: isOn(c.key) ? c.value : 0 }));
+  ].map((c) => {
+    // "Penghitungan sendiri": Biaya/Pcs yang diketik MENGGANTIKAN hasil otomatis tahap ini.
+    const m = (s.manual || {})[c.key];
+    const manual = !!(m && m.on);
+    const val = manual ? n(m.biaya) : c.value;
+    return { ...c, manual, rumus: manual ? String(m.rumus || "") : "", enabled: isOn(c.key), value: isOn(c.key) ? val : 0 };
+  });
 
   const subtotal = components.reduce((a, c) => a + (c.value || 0), 0);
   const labaPct = n(s.total.labaPct);

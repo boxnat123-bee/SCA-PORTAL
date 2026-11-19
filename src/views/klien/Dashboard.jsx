@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Building2, FileDown, FileText, Package, Archive } from "lucide-react";
+import { Plus, Search, Building2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 
 import * as kapi from "@/lib/klienApi";
 import { apiError } from "@/context/AuthContext";
 import PageContainer from "@/components/layout/PageContainer";
-import StatCard from "@/components/StatCard";
 import ClientCard from "@/components/klien/ClientCard";
 import {
   KlienDialog, PODialog, ItemDialog, MutationDialog, ConfirmDeleteDialog, KlienDetailDialog,
@@ -29,6 +28,15 @@ export default function KlienDashboard() {
   const [expanded, setExpanded] = useState(() => new Set());
   const [dialog, setDialog] = useState(null);
   const [exporting, setExporting] = useState(false);
+  // Detail item terbuka otomatis di panel samping (layar lebar) saat baris diklik
+  const [sel, setSel] = useState(null);
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1280px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const on = () => setWide(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["klien", "dashboard"],
@@ -87,7 +95,7 @@ export default function KlienDashboard() {
       onConfirm: () => kapi.deleteKlienItem(item.id),
     }),
     mutasi: (item, po, klien, jenis) => setDialog({ type: "mutasi", item, po, klien, jenis }),
-    detail: (item, po, klien) => setDialog({ type: "detail", item, po, klien }),
+    detail: (item, po, klien) => (wide ? setSel({ item, po, klien }) : setDialog({ type: "detail", item, po, klien })),
     toggleStatus,
   };
 
@@ -115,6 +123,14 @@ export default function KlienDashboard() {
       .filter((k) => (q ? k.nama.toLowerCase().includes(q) || k.pos.length > 0 : true));
   }, [data, search, statusFilter]);
 
+  // Saat pertama dibuka: semua PO terbuka, jadi item & detailnya langsung terlihat.
+  const [didInit, setDidInit] = useState(false);
+  useEffect(() => {
+    if (didInit || !data?.kliens) return;
+    setExpanded(new Set(data.kliens.flatMap((k) => (k.pos || []).map((p) => p.id))));
+    setDidInit(true);
+  }, [data, didInit]);
+
   // Auto-buka PO yang cocok saat mencari supaya hasil langsung terlihat.
   useEffect(() => {
     if (search.trim() && data) {
@@ -134,7 +150,13 @@ export default function KlienDashboard() {
     }
   };
 
-  const s = data?.summary;
+  // Item terpilih untuk panel samping: yang diklik, atau item pertama yang terlihat.
+  const firstVisible = (() => {
+    for (const k of filtered) for (const p of k.pos || []) if (expanded.has(p.id)) for (const it of p.items || []) return { item: it, po: p, klien: k };
+    return null;
+  })();
+  const selCtx = sel ? { ...sel, item: liveKlienItem(sel.item) } : firstVisible;
+  const selItem = selCtx?.item || null;
   const isEmpty = !isLoading && filtered.length === 0;
 
   return (
@@ -148,27 +170,12 @@ export default function KlienDashboard() {
             disabled={exporting} data-testid="klien-export-pdf">
             <FileDown className="h-4 w-4" /> {exporting ? "Menyiapkan..." : "Export PDF"}
           </Button>
-          <Button variant="outline" className="rounded-full gap-2"
-            onClick={() => setDialog({ type: "klien" })} data-testid="add-klien-btn">
-            <Building2 className="h-4 w-4" /> Tambah Klien
-          </Button>
           <Button className="rounded-full gap-2" onClick={() => setDialog({ type: "po" })} data-testid="add-po-global-btn">
-            <Plus className="h-4 w-4" /> Tambah Klien / PO
+            <Plus className="h-4 w-4" /> Tambah Stok Klien
           </Button>
         </div>
       )}
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="klien-summary">
-        <StatCard testid="stat-total_klien" icon={Building2} accent="primary"
-          label="Total Klien" value={isLoading ? "—" : (s?.total_klien ?? 0)} />
-        <StatCard testid="stat-total_po_aktif" icon={FileText} accent="sky"
-          label="PO Aktif" value={isLoading ? "—" : (s?.total_po_aktif ?? 0)} />
-        <StatCard testid="stat-total_item_aktif" icon={Package} accent="emerald"
-          label="Item Aktif" value={isLoading ? "—" : (s?.total_item_aktif ?? 0)} />
-        <StatCard testid="stat-total_item_selesai" icon={Archive} accent="amber"
-          label="Item Selesai/Ditutup" value={isLoading ? "—" : (s?.total_item_selesai ?? 0)} />
-      </div>
-
       <div className="flex flex-wrap gap-3">
         <div className="relative min-w-0 flex-[1_1_100%] sm:flex-[1_1_320px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -218,19 +225,31 @@ export default function KlienDashboard() {
               <EmptyContent>
                 <Button className="mt-1 gap-2 rounded-full" onClick={() => setDialog({ type: "po" })}
                   data-testid="empty-add-po-btn">
-                  <Plus className="h-4 w-4" /> Tambah Klien / PO
+                  <Plus className="h-4 w-4" /> Tambah Stok Klien
                 </Button>
               </EmptyContent>
             )}
           </Empty>
         </Card>
       ) : (
-        <div className="space-y-4" data-testid="klien-list">
-          {filtered.map((k, i) => (
-            <div key={k.id} className="stagger-in" style={{ animationDelay: `${i * 40}ms` }}>
-              <ClientCard klien={k} expanded={expanded} onTogglePo={togglePo} act={act} />
-            </div>
-          ))}
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-4" data-testid="klien-list">
+            {filtered.map((k, i) => (
+              <div key={k.id} className="stagger-in" style={{ animationDelay: `${i * 40}ms` }}>
+                <ClientCard klien={k} expanded={expanded} onTogglePo={togglePo} act={act} selectedId={wide ? selItem?.id : null} />
+              </div>
+            ))}
+          </div>
+          {wide && (
+            <aside className="sticky top-0 rounded-xl border border-border bg-card p-[18px]" aria-label="Detail item" data-testid="klien-detail-panel">
+              {selItem ? (
+                <KlienDetailDialog inline item={selItem} po={selCtx.po} klien={selCtx.klien}
+                  refreshKey={selItem.kuantiti} onChanged={refetch} />
+              ) : (
+                <p className="py-10 text-center text-sm text-muted-foreground">Klik baris item untuk melihat detail &amp; riwayat mutasinya.</p>
+              )}
+            </aside>
+          )}
         </div>
       )}
 

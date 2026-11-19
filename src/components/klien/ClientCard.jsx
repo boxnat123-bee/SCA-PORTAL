@@ -1,6 +1,6 @@
 import {
   Building2, ChevronDown, ChevronRight, Plus, Pencil, Trash2,
-  ArrowDownToLine, ArrowUpFromLine, CircleCheck, History, ArchiveRestore, PackageOpen,
+  ArrowDownToLine, ArrowUpFromLine, CircleCheck, ArchiveRestore, PackageOpen,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export function ItemStatusBadge({ status }) {
 const iconBtn =
   "h-7 w-7 text-muted-foreground transition-transform duration-150 hover:-translate-y-px hover:text-foreground";
 
-export default function ClientCard({ klien, expanded, onTogglePo, act }) {
+export default function ClientCard({ klien, expanded, onTogglePo, act, selectedId }) {
   return (
     <Card className="overflow-hidden rounded-2xl" data-testid={`klien-card-${klien.id}`}>
       <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
@@ -123,7 +123,9 @@ export default function ClientCard({ klien, expanded, onTogglePo, act }) {
                       {po.items.map((it) => {
                         const aktif = it.status === "aktif";
                         return (
-                          <TableRow key={it.id} className={aktif ? "" : "opacity-70"} data-testid={`item-row-${it.id}`}>
+                          <TableRow key={it.id} data-testid={`item-row-${it.id}`}
+                            onClick={() => act.detail(it, po, klien)} title="Klik untuk melihat detail & riwayat"
+                            className={`cursor-pointer ${selectedId === it.id ? "bg-accent/60 hover:bg-accent/60" : ""} ${aktif ? "" : "opacity-70"}`}>
                             <TableCell className="whitespace-nowrap font-medium">{it.jenis_item}</TableCell>
                             <TableCell className="text-muted-foreground">{it.satuan || "-"}</TableCell>
                             <TableCell className="text-right font-semibold [font-variant-numeric:tabular-nums]"
@@ -132,7 +134,7 @@ export default function ClientCard({ klien, expanded, onTogglePo, act }) {
                             </TableCell>
                             <TableCell><ItemStatusBadge status={it.status} /></TableCell>
                             <TableCell className="max-w-[200px] truncate text-muted-foreground">{it.keterangan || "-"}</TableCell>
-                            <TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-end gap-0.5">
                                 <Button variant="ghost" size="icon" title="Mutasi Masuk" disabled={!aktif}
                                   className="h-7 w-7 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 disabled:opacity-40 dark:text-emerald-400"
@@ -145,10 +147,6 @@ export default function ClientCard({ klien, expanded, onTogglePo, act }) {
                                   onClick={() => act.mutasi(it, po, klien, "keluar")}
                                   data-testid={`mutasi-keluar-btn-${it.id}`}>
                                   <ArrowUpFromLine className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className={iconBtn} title="Detail / Riwayat Mutasi"
-                                  onClick={() => act.detail(it, po, klien)} data-testid={`detail-item-btn-${it.id}`}>
-                                  <History className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="icon" className={iconBtn}
                                   title={aktif ? "Tutup Item (Selesai)" : "Aktifkan Kembali"}

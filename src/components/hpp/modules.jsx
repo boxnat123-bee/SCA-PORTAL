@@ -523,8 +523,8 @@ const PaperDiagram = ({ d }) => {
       {R(sfW, sfH, { fill: "#60A5FA", fillOpacity: 0.55, stroke: "#3B82F6", strokeWidth: 1 })}
       {R(cW, cH, { fill: "#1D4ED8", fillOpacity: 0.92, stroke: "#1E3A8A", strokeWidth: 1 })}
       {grainVertical
-        ? <line x1={cx} y1={cy - cH / 2 + 10} x2={cx} y2={cy + cH / 2 - 10} stroke="#ffffff" strokeWidth="1.5" markerStart="url(#ahd)" markerEnd="url(#ahd)" />
-        : <line x1={cx - cW / 2 + 10} y1={cy} x2={cx + cW / 2 - 10} y2={cy} stroke="#ffffff" strokeWidth="1.5" markerStart="url(#ahd)" markerEnd="url(#ahd)" />}
+        ? <line x1={cx} y1={cy + cH / 2 - 10} x2={cx} y2={cy - cH / 2 + 10} stroke="#ffffff" strokeWidth="1.5" markerStart="url(#ahd)" markerEnd="url(#ahd)" />
+        : <line x1={cx + cW / 2 - 10} y1={cy} x2={cx - cW / 2 + 10} y2={cy} stroke="#ffffff" strokeWidth="1.5" markerStart="url(#ahd)" markerEnd="url(#ahd)" />}
       <text x={cx} y={pad - 30} textAnchor="middle" fontSize="11" fill="#1E3A8A" fontWeight="700">L {g(kL)} cm</text>
       <text x={pad - 32} y={cy} textAnchor="middle" fontSize="11" fill="#1E3A8A" fontWeight="700" transform={`rotate(-90 ${pad - 32} ${cy})`}>P {g(kP)} cm</text>
       <text x={cx} y={cy - kH / 2 + 12} textAnchor="middle" fontSize="8" fill="#1E3A8A" fontWeight="600">Kertas</text>
@@ -544,7 +544,7 @@ const UkArea = ({ s, u, r }) => {
   return (
     <>
       <SectionTitle title="Uk Area Cetak"
-        hint="Patokan: Ukuran Cetak. Kertas P = Cetak P + Selisih Kres P + Anleg P; Kertas L = Cetak L + Selisih Kres L. Single Face = Kertas − Selisih Single Face. Tidak masuk ke Total HPP." />
+        hint="Patokan: Ukuran Cetak. Kertas P = Cetak P + Selisih Kres P + Anleg P; Kertas L = Cetak L + Selisih Kres L. Single Face = Cetak + Tambahan Single Face (P & L). Tidak masuk ke Total HPP." />
       <Grid>
         <Field label="Bahan" testid="field-uk-bahan"><TextInput testid="input-uk-bahan" value={s.bahan} onChange={(v) => u("bahan", v)} /></Field>
         <Field label="Ukuran Plano (Cm)" unit="P x L" testid="field-uk-plano">
@@ -561,7 +561,7 @@ const UkArea = ({ s, u, r }) => {
         </Field>
         <Field label="Selisih Kres P (Cm)" unit="Cm" testid="field-uk-kresp"><NumberInput testid="input-uk-kresp" value={s.kresP} onChange={(v) => u("kresP", v)} /></Field>
         <Field label="Selisih Kres L (Cm)" unit="Cm" testid="field-uk-kresl"><NumberInput testid="input-uk-kresl" value={s.kresL} onChange={(v) => u("kresL", v)} /></Field>
-        <Field label="Selisih Single Face (Cm)" unit="Cm" testid="field-uk-sf"><NumberInput testid="input-uk-sf" value={s.sf} onChange={(v) => u("sf", v)} /></Field>
+        <Field label="Tambahan Single Face dari Cetak (Cm)" unit="Cm" testid="field-uk-sf"><NumberInput testid="input-uk-sf" value={s.sf} onChange={(v) => u("sf", v)} /></Field>
         <Field label="Anleg P (Cm)" unit="Cm" testid="field-uk-anleg"><NumberInput testid="input-uk-anleg" value={s.anlegP} onChange={(v) => u("anlegP", v)} /></Field>
         <Field label="Arah Serat" testid="field-uk-serat">
           <SelectInput testid="input-uk-serat" value={s.arahSerat}
@@ -577,7 +577,7 @@ const UkArea = ({ s, u, r }) => {
           <ResultLine label="Ukuran Single Face" value={sf} money={false} strong testid="uk-result-sf" />
           <div className="mt-3 border-t border-border pt-2">
             <ResultLine label="Selisih Kertas → Cetak (P x L)" value={`${g(r.kresP + r.anlegP)} x ${g(r.kresL)} cm`} money={false} testid="uk-result-selisih-cetak" />
-            <ResultLine label="Selisih Kertas → Single Face" value={`${g(r.sf)} cm`} money={false} />
+            <ResultLine label="Tambahan Cetak → Single Face" value={`${g(r.sf)} cm`} money={false} />
             <ResultLine label="Selisih Single Face → Cetak (P x L)" value={`${g(r.sfCetakP)} x ${g(r.sfCetakL)} cm`} money={false} testid="uk-result-selisih-sf" />
             <ResultLine label="— terdiri dari Kres P + Anleg P" value={`${g(r.kresP) || 0} + ${g(r.anlegP) || 0} cm`} money={false} />
           </div>
@@ -589,7 +589,7 @@ const UkArea = ({ s, u, r }) => {
             <LegendDot style={{ background: "#DBEAFE", border: "1px dashed #2563EB" }} label="Kertas" />
             <LegendDot style={{ background: "#60A5FA" }} label="Single Face" />
             <LegendDot style={{ background: "#1D4ED8" }} label="Cetak" />
-            <span className="flex items-center gap-1.5">↔ Arah Serat</span>
+            <span className="flex items-center gap-1.5">{r.arahSerat === "L" ? "↑" : "←"} Arah Serat</span>
           </div>
         </div>
       </div>

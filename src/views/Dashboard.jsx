@@ -82,19 +82,12 @@ export default function Dashboard() {
   const unpaidSum = unpaid.reduce((a, i) => a + (Number(i.remaining_amount) || 0), 0);
   const overdue = unpaid.filter((i) => i.due_date && String(i.due_date).slice(0, 10) < today).length;
 
-  // Perlu perhatian: pengingat (PO H-5, jatuh tempo H-3) + stok habis
-  const attention = [
-    ...(notif?.items || []).map((n) => ({
-      key: n.id, tone: n.days < 0 ? "late" : "soon",
-      tag: n.days < 0 ? `Lewat ${-n.days} hari` : n.days === 0 ? "Hari ini" : `H-${n.days}`,
-      title: n.title, body: n.body, link: n.link,
-    })),
-    ...(data.low_stock || []).map((s) => ({
-      key: `s-${s.id}`, tone: "stock", tag: "Stok habis", title: s.label || s.jenis_tinta || s.nama_barang,
-      body: `${s.kategori} · sisa ${formatNumber(s.stock, 2)} ${s.satuan || ""}`,
-      link: s.kategori === "Kertas" ? "/stok/kertas" : s.kategori === "Tinta" ? "/stok/tinta" : "/stok/lainnya",
-    })),
-  ].slice(0, 6);
+  // Perlu perhatian: hanya proses produksi yang mendekati deadline (PO H-5 Est. Selesai)
+  const attention = (notif?.items || []).filter((n) => n.kind === "po").map((n) => ({
+    key: n.id, tone: n.days < 0 ? "late" : "soon",
+    tag: n.days < 0 ? `Lewat ${-n.days} hari` : n.days === 0 ? "Hari ini" : `H-${n.days}`,
+    title: n.title, body: n.body, link: n.link,
+  })).slice(0, 8);
 
   // Produksi hari ini: jadwal tahap yang mencakup hari ini + PO yang selesai/kirim hari ini
   const todaySched = scheds.filter((s) => s.date <= today && today <= (s.end_date || s.date));
@@ -117,7 +110,7 @@ export default function Dashboard() {
       <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr]">
         <Panel title="Perlu perhatian">
           <div className="mt-1.5">
-            {attention.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada yang perlu diperhatikan saat ini.</p>}
+            {attention.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada PO yang mendekati deadline (H-5).</p>}
             {attention.map((a) => (
               <div key={a.key} className="flex items-center gap-3 border-b border-border/60 py-[11px] last:border-0">
                 <span className={`whitespace-nowrap rounded-full px-2 py-[3px] text-[11px] font-semibold ${TAG[a.tone]}`}>{a.tag}</span>
