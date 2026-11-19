@@ -12,10 +12,32 @@ import * as api from "@/lib/hppApi";
 
 const NAV = [{ id: "summary", label: "Ringkasan", icon: SUMMARY_ICON }, ...MODULES];
 
+// Draf kalkulator disimpan di browser agar isian tidak hilang saat pindah ke menu lain / refresh.
+const DRAFT_KEY = "sca_hpp_draft_v1";
+const NEW_META = { id: null, name: "Produk Baru", customer: "", notes: "" };
+function readDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { return null; }
+}
+/** Gabungkan draf dengan struktur kosong (kalau ada field baru di versi berikutnya). */
+function mergeInputs(base, inputs) {
+  const merged = { ...base };
+  Object.keys(inputs || {}).forEach((k) => {
+    const v = inputs[k];
+    merged[k] = v && typeof v === "object" && !Array.isArray(v) ? { ...(base[k] || {}), ...v } : v;
+  });
+  return merged;
+}
+
 export default function HppCalculator() {
-  const [state, setState] = useState(defaultState());
-  const [active, setActive] = useState("summary");
-  const [meta, setMeta] = useState({ id: null, name: "Produk Baru", customer: "", notes: "" });
+  const [state, setState] = useState(() => {
+    const d = readDraft();
+    return d?.state ? mergeInputs(emptyState(), d.state) : emptyState();
+  });
+  const [active, setActive] = useState(() => readDraft()?.active || "summary");
+  const [meta, setMeta] = useState(() => readDraft()?.meta || NEW_META);
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ state, active, meta })); } catch { /* abaikan */ }
+  }, [state, active, meta]);
   const [saved, setSaved] = useState([]);
   const [drawer, setDrawer] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -90,7 +112,7 @@ export default function HppCalculator() {
 
   const newCalc = () => {
     setState(emptyState());
-    setMeta({ id: null, name: "Produk Baru", customer: "", notes: "" });
+    setMeta(NEW_META);
     setActive("summary");
   };
 
@@ -104,8 +126,8 @@ export default function HppCalculator() {
         </div>
         <div className="flex items-center gap-2">
           <button data-testid="btn-new" onClick={newCalc} title="Baru"
-            className="hidden sm:inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium shadow-soft transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary/30 hover:bg-secondary hover:text-foreground hover:shadow-lift active:scale-[0.985]">
-            <RotateCcw className="h-4 w-4" /> Baru
+            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium shadow-soft transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary/30 hover:bg-secondary hover:text-foreground hover:shadow-lift active:scale-[0.985]">
+            <RotateCcw className="h-4 w-4" /> <span className="hidden sm:inline">Baru</span>
           </button>
           <button data-testid="btn-open-saved" onClick={() => { loadSaved(); setDrawer(true); }}
             className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium shadow-soft transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary/30 hover:bg-secondary hover:text-foreground hover:shadow-lift active:scale-[0.985]">

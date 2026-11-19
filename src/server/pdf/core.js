@@ -142,7 +142,32 @@ export function wrapLines(ctx, str, maxWidth, size = 8, bold = false) {
  * Tabel PDF. Default: teks yang kepanjangan dipotong (…).
  * wrap: true → teks dibungkus ke baris berikutnya & tinggi baris menyesuaikan (tidak terpotong).
  */
-export function drawTable(ctx, header, rows, { weights, rightCols = [], fontSize = 8, wrap = false } = {}) {
+/**
+ * Pita judul grup (mis. nama item) — latar terang dengan aksen biru di kiri.
+ * right: teks kecil rata kanan (mis. satuan / jumlah mutasi).
+ */
+export function groupTitle(ctx, title, right = "", { minSpace = 70 } = {}) {
+  ensure(ctx, minSpace);
+  const total = contentWidth(ctx);
+  const h = 18;
+  const yBot = ctx.y - h;
+  ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: h, color: rgb(0.906, 0.933, 0.988) });
+  ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: 3, height: h, color: C.primary });
+  ctx.page.drawText(sanitize(title), { x: ctx.margin + 9, y: yBot + 5.5, size: 9.5, font: ctx.bold, color: C.header });
+  if (right) {
+    const r = sanitize(right);
+    const tw = ctx.font.widthOfTextAtSize(r, 8);
+    ctx.page.drawText(r, { x: ctx.margin + total - 8 - tw, y: yBot + 6, size: 8, font: ctx.font, color: C.sub });
+  }
+  ctx.y = yBot;
+}
+
+export function drawTable(ctx, header, rows, {
+  weights, rightCols = [], fontSize = 8, wrap = false,
+  colColors = {},      // { indexKolom: warna } untuk isi sel (bukan header)
+  boldCols = [],       // kolom isi yang ditebalkan
+  onPageBreak = null,  // dipanggil di halaman baru sebelum header diulang (mis. ulang judul grup)
+} = {}) {
   const total = contentWidth(ctx);
   const w = weights && weights.length === header.length ? weights : header.map(() => 1);
   const sumW = w.reduce((a, b) => a + b, 0);
@@ -153,15 +178,18 @@ export function drawTable(ctx, header, rows, { weights, rightCols = [], fontSize
 
   const layout = (cells, isHeader) => cells.map((cell, i) => {
     const raw = cell === null || cell === undefined || cell === "" ? "" : String(cell);
-    if (!wrap) return [truncate(ctx, raw, widths[i] - pad * 2, fontSize, isHeader)];
-    return wrapLines(ctx, raw, widths[i] - pad * 2, fontSize, isHeader);
+    if (!wrap) return [truncate(ctx, raw, widths[i] - pad * 2, fontSize, isHeader || boldCols.includes(i))];
+    return wrapLines(ctx, raw, widths[i] - pad * 2, fontSize, isHeader || boldCols.includes(i));
   });
   const heightOf = (lines) => Math.max(baseH, Math.max(...lines.map((l) => l.length)) * lineH + 6.5);
 
   const drawRow = (cells, { isHeader = false, zebra = false } = {}) => {
     const lines = layout(cells, isHeader);
     const rowH = heightOf(lines);
-    if (ensure(ctx, rowH) && !isHeader) drawRow(header, { isHeader: true });
+    if (ensure(ctx, rowH) && !isHeader) {
+      if (onPageBreak) onPageBreak();
+      drawRow(header, { isHeader: true });
+    }
     const yTop = ctx.y;
     const yBot = yTop - rowH;
     if (isHeader) {
@@ -174,15 +202,16 @@ export function drawTable(ctx, header, rows, { weights, rightCols = [], fontSize
       const cw = widths[i];
       ctx.page.drawRectangle({ x, y: yBot, width: cw, height: rowH, borderColor: C.border, borderWidth: 0.5 });
       cellLines.forEach((label, li) => {
-        const tw = widthOf(ctx, label, fontSize, isHeader);
+        const isBold = isHeader || boldCols.includes(i);
+        const tw = widthOf(ctx, label, fontSize, isBold);
         const tx = rightCols.includes(i) && !isHeader ? x + cw - pad - tw : x + pad;
         const ty = wrap
           ? yTop - 4 - fontSize - li * lineH + 1.5
           : yBot + (rowH - fontSize) / 2 + 1.5;
         ctx.page.drawText(label, {
           x: tx, y: ty, size: fontSize,
-          font: isHeader ? ctx.bold : ctx.font,
-          color: isHeader ? C.white : C.text,
+          font: isBold ? ctx.bold : ctx.font,
+          color: isHeader ? C.white : (colColors[i] || C.text),
         });
       });
       x += cw;

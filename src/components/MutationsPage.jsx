@@ -64,7 +64,7 @@ export function priceText(it) {
 function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
   const blank = {
     jenis_kertas: "", gramatur: "", panjang: "", lebar: "", satuan: type === "paper" ? "Rim" : "", jenis_tinta: "", nama_barang: "",
-    jumlah: "", supplier: "", date: "", time: "", keterangan: "",
+    jumlah: "", supplier: "", nama_cetakan: "", date: "", time: "", keterangan: "",
     harga_mode: "per_satuan", harga: "", harga_label: "", ppn_ada: false, ppn_nominal: "",
   };
   const [f, setF] = useState(blank);
@@ -136,6 +136,7 @@ function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
                 <div className="space-y-1.5"><Label>Tanggal</Label><Input type="date" value={f.date} onChange={set("date")} /></div>
                 <div className="space-y-1.5"><Label>Waktu</Label><Input type="time" value={f.time} onChange={set("time")} /></div>
               </div>
+              <div className="space-y-1.5"><Label>Nama Cetakan <span className="text-muted-foreground">(opsional)</span></Label><Input value={f.nama_cetakan} onChange={set("nama_cetakan")} placeholder="cth: Box Kue Lapis 20x20" data-testid="item-cetakan" /></div>
               <div className="space-y-1.5"><Label>Keterangan <span className="text-muted-foreground">(opsional)</span></Label><Input value={f.keterangan} onChange={set("keterangan")} /></div>
             </div>
           )}
