@@ -36,8 +36,8 @@ export default function NavUser({ user, isSuper, lang, setLang, onLogout }) {
             data-testid="nav-user-trigger"
             className="flex w-full items-center gap-2.5 rounded-lg border border-transparent p-2 text-left transition-colors duration-200 ease-out hover:border-border hover:bg-secondary data-[state=open]:border-border data-[state=open]:bg-secondary"
           >
-            <Avatar className="h-9 w-9 rounded-lg">
-              <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+            <Avatar className="h-9 w-9 rounded-full">
+              <AvatarFallback className="rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 {initials(user?.name)}
               </AvatarFallback>
             </Avatar>

@@ -1,13 +1,16 @@
-export const LOGO_URL =
-  "https://customer-assets-gfyr7b9c.emergentagent.net/job_mutasi-stok/artifacts/k6zao2lr_Screenshot_488.png";
+// Logo resmi Percetakan SCA (PNG transparan, disajikan dari /public).
+export const LOGO_URL = "/logo-sca.png";
 
-export default function Logo({ size = 40, className = "" }) {
+export default function Logo({ size = 40, className = "", plate = false }) {
+  // Rasio logo ≈ 1,39 : 1 (lebar : tinggi)
+  const h = size;
+  const w = Math.round(size * 1.39);
   return (
     <div
-      className={`grid shrink-0 place-items-center overflow-hidden rounded-md bg-white p-1 shadow-sm ${className}`}
-      style={{ height: size, width: size }}
+      className={`grid shrink-0 place-items-center ${plate ? "rounded-lg bg-white p-1.5 shadow-sm" : ""} ${className}`}
+      style={{ height: plate ? h + 12 : h, width: plate ? w + 12 : w }}
     >
-      <img src={LOGO_URL} alt="Logo SCA" className="h-full w-full object-contain" />
+      <img src={LOGO_URL} alt="Logo Percetakan SCA" className="h-full w-full object-contain dark:invert" />
     </div>
   );
 }

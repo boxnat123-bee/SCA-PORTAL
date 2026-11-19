@@ -451,12 +451,12 @@ export default function MutationsPage({ type }) {
                     <TableCell>
                       <div className="flex items-center justify-end gap-0.5">
                         <Button variant="ghost" size="icon" title="Mutasi Masuk"
-                          className="h-8 w-8 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400"
+                          className="h-8 w-8 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 dark:text-emerald-400"
                           onClick={() => setMove({ item: it, jenis: "masuk" })} data-testid={`masuk-btn-${it.id}`}>
                           <ArrowDownToLine className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" title="Mutasi Keluar"
-                          className="h-8 w-8 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400"
+                          className="h-8 w-8 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 hover:text-rose-800 dark:text-rose-400"
                           onClick={() => setMove({ item: it, jenis: "keluar" })} data-testid={`keluar-btn-${it.id}`}>
                           <ArrowUpFromLine className="h-4 w-4" />
                         </Button>

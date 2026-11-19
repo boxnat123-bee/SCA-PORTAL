@@ -36,32 +36,33 @@ pre {
 }
 
 @layer base {
+    /* Tema "Navy Ledger" (UI baru 19 Nov 2026). Versi lama: git tag/commit f64be81. */
     :root {
-        --background: 60 9% 98%;
-        --foreground: 240 10% 4%;
+        --background: 220 14% 96.5%;
+        --foreground: 222 47% 11%;
         --card: 0 0% 100%;
-        --card-foreground: 240 10% 4%;
+        --card-foreground: 222 47% 11%;
         --popover: 0 0% 100%;
-        --popover-foreground: 240 10% 4%;
-        --primary: 221 83% 53%;
+        --popover-foreground: 222 47% 11%;
+        --primary: 224 64% 33%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 60 5% 96%;
-        --secondary-foreground: 240 6% 10%;
-        --muted: 60 5% 96%;
-        --muted-foreground: 240 4% 46%;
-        --accent: 60 5% 96%;
-        --accent-foreground: 240 6% 10%;
-        --destructive: 0 84% 60%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222 47% 11%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215 19% 35%;
+        --accent: 226 100% 97%;
+        --accent-foreground: 224 64% 33%;
+        --destructive: 0 72% 51%;
         --destructive-foreground: 0 0% 100%;
-        --border: 240 6% 90%;
-        --input: 240 6% 90%;
-        --ring: 221 83% 53%;
-        --chart-1: 221 83% 53%;
-        --chart-2: 347 77% 60%;
-        --chart-3: 199 89% 48%;
-        --chart-4: 38 92% 50%;
-        --chart-5: 160 84% 39%;
-        --radius: 0.5rem;
+        --border: 220 13% 91%;
+        --input: 220 13% 88%;
+        --ring: 224 64% 33%;
+        --chart-1: 224 64% 33%;
+        --chart-2: 213 94% 78%;
+        --chart-3: 160 84% 30%;
+        --chart-4: 25 95% 45%;
+        --chart-5: 271 81% 56%;
+        --radius: 0.625rem;
     }
     .dark {
         --background: 240 10% 4%;
@@ -70,8 +71,8 @@ pre {
         --card-foreground: 0 0% 98%;
         --popover: 240 6% 10%;
         --popover-foreground: 0 0% 98%;
-        --primary: 221 83% 53%;
-        --primary-foreground: 0 0% 100%;
+        --primary: 217 91% 65%;
+        --primary-foreground: 222 47% 11%;
         --secondary: 240 4% 16%;
         --secondary-foreground: 0 0% 98%;
         --muted: 240 4% 16%;
@@ -82,7 +83,7 @@ pre {
         --destructive-foreground: 0 0% 98%;
         --border: 240 4% 16%;
         --input: 240 4% 16%;
-        --ring: 221 83% 53%;
+        --ring: 217 91% 65%;
         --chart-1: 217 91% 60%;
         --chart-2: 347 77% 60%;
         --chart-3: 199 89% 48%;

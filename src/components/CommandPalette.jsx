@@ -37,17 +37,17 @@ const ICONS = {
   kalender: CalendarDays,
 };
 
-export function CommandPaletteTrigger({ onOpen }) {
+export function CommandPaletteTrigger({ onOpen, label = "Cari menu, item, PO…" }) {
   const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform || "");
   return (
     <Button
       variant="outline"
       onClick={onOpen}
       data-testid="command-palette-trigger"
-      className="relative hidden h-9 w-40 justify-start gap-2 pr-14 font-normal text-muted-foreground lg:w-56 md:inline-flex"
+      className="relative hidden h-[38px] w-full justify-start gap-2 bg-secondary/60 pr-16 font-normal text-muted-foreground md:inline-flex"
     >
       <Search className="h-4 w-4" />
-      Cari menu…
+      {label}
       <Kbd className="absolute right-2 top-1/2 -translate-y-1/2">{isMac ? "⌘" : "Ctrl"} K</Kbd>
     </Button>
   );

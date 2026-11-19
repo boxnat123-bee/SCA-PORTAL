@@ -135,13 +135,13 @@ export default function ClientCard({ klien, expanded, onTogglePo, act }) {
                             <TableCell>
                               <div className="flex items-center justify-end gap-0.5">
                                 <Button variant="ghost" size="icon" title="Mutasi Masuk" disabled={!aktif}
-                                  className="h-7 w-7 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 disabled:opacity-40 dark:text-emerald-400"
+                                  className="h-7 w-7 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 hover:text-emerald-800 disabled:opacity-40 dark:text-emerald-400"
                                   onClick={() => act.mutasi(it, po, klien, "masuk")}
                                   data-testid={`mutasi-masuk-btn-${it.id}`}>
                                   <ArrowDownToLine className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="icon" title="Mutasi Keluar" disabled={!aktif}
-                                  className="h-7 w-7 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 disabled:opacity-40 dark:text-rose-400"
+                                  className="h-7 w-7 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 hover:text-rose-800 disabled:opacity-40 dark:text-rose-400"
                                   onClick={() => act.mutasi(it, po, klien, "keluar")}
                                   data-testid={`mutasi-keluar-btn-${it.id}`}>
                                   <ArrowUpFromLine className="h-4 w-4" />

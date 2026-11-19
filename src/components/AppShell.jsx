@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
+  LayoutDashboard, FileStack, Droplets, Package, ClipboardList,
   Users, CalendarX, Menu, X, Calculator,
-  ListTodo, CalendarDays, Globe, Search, Boxes, History, Receipt, PieChart,
+  ListTodo, CalendarDays, Globe, Search, Boxes, Receipt, PieChart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +15,6 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import NavUser from "@/components/NavUser";
 import CommandPalette, { CommandPaletteTrigger, useCommandPalette } from "@/components/CommandPalette";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
@@ -57,99 +56,84 @@ export default function AppShell() {
   }, [resetTimers]);
 
   const isSuper = user?.role === "superadmin";
+  const en = lang === "en";
+  const L = (id, enText) => (en ? enText : id);
 
   const stokMenu = [
-    { to: "/stok", label: "Dashboard", icon: LayoutDashboard, end: true, show: perms.canStokDashboard },
-    { to: "/stok/kertas", label: "Mutasi Kertas", icon: FileStack, show: perms.canStokMutations },
-    { to: "/stok/tinta", label: "Mutasi Tinta", icon: Droplets, show: perms.canStokMutations },
-    { to: "/stok/lainnya", label: "Mutasi Lain", icon: Package, show: perms.canStokMutations },
-    { to: "/stok/laporan-stok", label: "Laporan Stok", icon: ClipboardList, show: perms.canStokReport },
-    { to: "/stok/tutup-tahun", label: "Tutup Tahun", icon: CalendarX, locked: true, show: perms.canStokYearClose },
+    { to: "/stok", label: L("Dashboard Stok", "Stock Dashboard"), icon: LayoutDashboard, end: true, show: perms.canStokDashboard },
+    { to: "/stok/kertas", label: L("Mutasi Kertas", "Paper Movements"), icon: FileStack, show: perms.canStokMutations },
+    { to: "/stok/tinta", label: L("Mutasi Tinta", "Ink Movements"), icon: Droplets, show: perms.canStokMutations },
+    { to: "/stok/lainnya", label: L("Mutasi Lain", "Other Movements"), icon: Package, show: perms.canStokMutations },
+    { to: "/stok/laporan-stok", label: L("Laporan Stok", "Stock Report"), icon: ClipboardList, show: perms.canStokReport },
+    { to: "/stok/tutup-tahun", label: L("Tutup Tahun", "Year-End Close"), icon: CalendarX, show: perms.canStokYearClose },
   ].filter((m) => m.show);
 
-  // Ditempatkan terpisah di pojok kiri bawah sidebar (di atas kartu user).
   const logUserItem = perms.canStokLogs
-    ? { to: "/stok/log-user", label: "Log & User", icon: Users, locked: true }
+    ? { to: "/stok/log-user", label: L("Log & User", "Logs & Users"), icon: Users }
     : null;
 
   const poMenu = [
-    { to: "/po", label: "Dashboard PO", icon: LayoutDashboard, end: true },
-    { to: "/po/pos", label: "Daftar PO", icon: ListTodo },
-    { to: "/po/kalender", label: "Kalender Produksi", icon: CalendarDays },
+    { to: "/po", label: L("Dashboard PO", "PO Dashboard"), icon: LayoutDashboard, end: true },
+    { to: "/po/pos", label: L("Daftar PO", "PO List"), icon: ListTodo },
+    { to: "/po/kalender", label: L("Kalender Produksi", "Production Calendar"), icon: CalendarDays },
   ];
-
-  const hppMenu = perms.canHpp ? [{ to: "/hpp", label: "Kalkulator HPP", icon: Calculator, end: true }] : [];
-
-  // Tool baru: Stok Klien (Superadmin + Admin/PIC)
   const klienMenu = perms.canStokKlien
-    ? [
-        { to: "/stok-klien", label: "Dashboard Stok Klien", icon: Boxes, end: true },
-      ]
+    ? [{ to: "/stok-klien", label: L("Stok Klien", "Client Stock"), icon: Boxes, end: true }]
     : [];
-
-  // Tool baru: Jatuh Tempo Klien (Superadmin only — memuat nominal Rupiah)
   const tempoMenu = perms.canTempo
     ? [
-        { to: "/tempo", label: "Daftar Invoice", icon: Receipt, end: true },
-        { to: "/tempo/laporan", label: "Laporan Jatuh Tempo", icon: PieChart },
+        { to: "/tempo", label: L("Jatuh Tempo Klien", "Client Due Dates"), icon: Receipt, end: true },
+        { to: "/tempo/laporan", label: L("Laporan Jatuh Tempo", "Due Date Report"), icon: PieChart },
       ]
     : [];
+  const hppMenu = perms.canHpp ? [{ to: "/hpp", label: L("Kalkulator HPP", "COGS Calculator"), icon: Calculator, end: true }] : [];
 
+  // Gaya "Navy Ledger": item aktif = latar biru muda + teks biru tua (bukan blok solid).
   const NavItem = ({ item }) => (
     <NavLink to={item.to} end={item.end}
-      data-testid={`nav-${item.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+      data-testid={`nav-${item.to.replace(/[^a-z]+/g, "-")}`}
       onClick={() => setOpen(false)}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-[color,background-color,box-shadow,opacity] duration-200 ease-out ${isActive
-          ? "bg-primary text-primary-foreground shadow-glow"
-          : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
-      <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 ease-out" />
-      <span className="flex-1">{item.label}</span>
+        `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors duration-150 ${isActive
+          ? "bg-accent font-semibold text-accent-foreground"
+          : "font-medium text-foreground/75 hover:bg-secondary hover:text-foreground"}`}>
+      <item.icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
+      <span className="flex-1 truncate">{item.label}</span>
     </NavLink>
   );
 
   const SectionHeader = ({ label }) => (
-    <div className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70">{label}</div>
+    <div className="px-2.5 pb-1.5 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">{label}</div>
   );
 
   const SidebarInner = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
-        <Logo size={38} />
-        <div>
-          <div className="font-display text-base font-extrabold tracking-tight leading-none">SCA PORTAL</div>
-          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Stok • PO • Klien</div>
+      <div className="flex items-center gap-2.5 px-4 pb-4 pt-5">
+        <Logo size={30} />
+        <div className="min-w-0">
+          <div className="text-[14px] font-bold leading-tight">SCA Portal</div>
+          <div className="text-[11px] text-muted-foreground">Percetakan SCA</div>
         </div>
       </div>
-      <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
-        <SectionHeader label="Laporan Stok SCA" />
-        {stokMenu.map((item) => <NavItem key={item.to} item={item} />)}
-
-        <SectionHeader label="Tracking PO" />
-        {poMenu.map((item) => <NavItem key={item.to} item={item} />)}
-
-        {klienMenu.length > 0 && (
+      <nav className="flex-1 overflow-y-auto px-3 pb-3 scrollbar-thin" aria-label={L("Menu utama", "Main menu")}>
+        <SectionHeader label={L("Stok", "Stock")} />
+        <div className="space-y-0.5">{stokMenu.map((item) => <NavItem key={item.to} item={item} />)}</div>
+        <SectionHeader label={L("Produksi", "Production")} />
+        <div className="space-y-0.5">
+          {poMenu.map((item) => <NavItem key={item.to} item={item} />)}
+          {klienMenu.map((item) => <NavItem key={item.to} item={item} />)}
+        </div>
+        {(tempoMenu.length > 0 || hppMenu.length > 0) && (
           <>
-            <SectionHeader label="Stok Klien" />
-            {klienMenu.map((item) => <NavItem key={item.to} item={item} />)}
-          </>
-        )}
-
-        {tempoMenu.length > 0 && (
-          <>
-            <SectionHeader label="Jatuh Tempo Klien" />
-            {tempoMenu.map((item) => <NavItem key={item.to} item={item} />)}
-          </>
-        )}
-
-        {hppMenu.length > 0 && (
-          <>
-            <SectionHeader label="Kalkulator" />
-            {hppMenu.map((item) => <NavItem key={item.to} item={item} />)}
+            <SectionHeader label={L("Keuangan", "Finance")} />
+            <div className="space-y-0.5">
+              {tempoMenu.map((item) => <NavItem key={item.to} item={item} />)}
+              {hppMenu.map((item) => <NavItem key={item.to} item={item} />)}
+            </div>
           </>
         )}
       </nav>
-      <div className="border-t border-border p-3 space-y-2">
+      <div className="space-y-2 border-t border-border p-3">
         {logUserItem && (
           <div data-testid="sidebar-footer-nav">
             <NavItem item={logUserItem} />
@@ -166,40 +150,48 @@ export default function AppShell() {
     </div>
   );
 
+  // Navigasi bawah khusus HP
+  const bottomNav = [
+    { to: "/stok", label: L("Beranda", "Home"), icon: LayoutDashboard, end: true },
+    { to: "/stok/kertas", label: L("Stok", "Stock"), icon: FileStack },
+    { to: "/po/pos", label: "PO", icon: ListTodo },
+    { to: "/po/kalender", label: L("Kalender", "Calendar"), icon: CalendarDays },
+  ];
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <aside className="hidden md:flex h-full w-64 shrink-0 flex-col border-r border-border bg-card">
+      <aside className="hidden h-full w-[248px] shrink-0 flex-col border-r border-border bg-card md:flex">
         {SidebarInner}
       </aside>
 
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-64 bg-card shadow-xl">{SidebarInner}</div>
+          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-[264px] bg-card shadow-xl">{SidebarInner}</div>
         </div>
       )}
 
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-background/70 px-4 py-3 backdrop-blur-xl md:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <Button variant="outline" size="icon" className="md:hidden" data-testid="mobile-menu-button" onClick={() => setOpen((v) => !v)}>
+        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 md:px-7">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Button variant="outline" size="icon" className="md:hidden" data-testid="mobile-menu-button" aria-label="Menu" onClick={() => setOpen((v) => !v)}>
               {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
-            <span className="hidden font-display text-sm font-semibold text-muted-foreground md:inline">Sistem Terpadu SCA</span>
-            <Separator orientation="vertical" className="hidden h-4 md:block" />
-            <div className="min-w-0 truncate text-sm">
+            <div className="hidden w-full max-w-[380px] md:block">
+              <CommandPaletteTrigger onOpen={() => setCmdOpen(true)} label={L("Cari menu, item, PO…", "Search menu, items, POs…")} />
+            </div>
+            <div className="min-w-0 truncate text-sm md:hidden">
               <Breadcrumbs />
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <CommandPaletteTrigger onOpen={() => setCmdOpen(true)} />
             <Button variant="outline" size="icon" className="md:hidden" data-testid="command-palette-trigger-mobile"
-              aria-label="Cari menu" onClick={() => setCmdOpen(true)}>
+              aria-label={L("Cari menu", "Search menu")} onClick={() => setCmdOpen(true)}>
               <Search className="h-4 w-4" />
             </Button>
             <Select value={lang} onValueChange={setLang}>
-              <SelectTrigger className="w-[92px] h-9" data-testid="lang-toggle">
-                <div className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{lang === "id" ? "ID" : "EN"}</div>
+              <SelectTrigger className="h-9 w-[124px]" data-testid="lang-toggle" aria-label={L("Bahasa", "Language")}>
+                <div className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{en ? "English" : "Indonesia"}</div>
               </SelectTrigger>
               <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
             </Select>
@@ -207,11 +199,10 @@ export default function AppShell() {
             <ThemeToggle />
           </div>
         </header>
-        {/* flex flex-col: supaya PageContainer (flex-1) bisa mengisi sisa tinggi viewport
-            secara dinamis (dibutuhkan halaman tabel full-height). Halaman lain tetap
-            scroll normal karena overflow-y-auto dipertahankan. */}
-        <main className="flex flex-1 flex-col overflow-y-auto p-4 md:p-8">
-          {/* Fallback saat chunk halaman lazy dimuat — sidebar & header tetap terlihat */}
+        <div className="hidden border-b border-border bg-card/60 px-7 py-2 text-sm md:block">
+          <Breadcrumbs />
+        </div>
+        <main className="flex flex-1 flex-col overflow-y-auto p-4 pb-24 md:p-7 md:pb-7">
           <Suspense
             fallback={
               <div role="status" aria-label="Memuat halaman" className="flex flex-1 flex-col gap-4">
@@ -224,6 +215,18 @@ export default function AppShell() {
             <Outlet />
           </Suspense>
         </main>
+
+        <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t border-border bg-card md:hidden" aria-label={L("Navigasi bawah", "Bottom navigation")}>
+          {bottomNav.map((it) => (
+            <NavLink key={it.to} to={it.to} end={it.end}
+              className={({ isActive }) => `flex flex-1 flex-col items-center justify-center gap-0.5 text-[10.5px] ${isActive ? "font-bold text-primary" : "font-medium text-muted-foreground"}`}>
+              <it.icon className="h-5 w-5" />{it.label}
+            </NavLink>
+          ))}
+          <button type="button" onClick={() => setOpen(true)} className="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10.5px] font-medium text-muted-foreground">
+            <Menu className="h-5 w-5" />{L("Lainnya", "More")}
+          </button>
+        </nav>
       </div>
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
