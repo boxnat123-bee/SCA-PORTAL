@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Plus, X, CalendarDays, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, CalendarDays, ArrowUpRight, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import * as api from "@/lib/poApi";
 import { useLang } from "@/context/LangContext";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import PageContainer from "@/components/layout/PageContainer";
 import { sortStages, stagePos } from "@/lib/poStages";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -39,6 +40,8 @@ function dayTitle(ds, lang) {
   return new Date(y, m - 1, d).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 const MAX_PILLS = 3;
+/** Hari ke-berapa (1-based) tanggal b dihitung dari tanggal a. */
+const dayIndex = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000) + 1;
 
 export default function PoCalendar() {
   const { t, stageName, lang } = useLang();
@@ -51,6 +54,8 @@ export default function PoCalendar() {
   const [formPo, setFormPo] = useState("");
   const [formStage, setFormStage] = useState("");
   const [formDate, setFormDate] = useState("");
+  const [formEnd, setFormEnd] = useState("");
+  const [editSched, setEditSched] = useState(null);
   const [hideCat, setHideCat] = useState({});
 
   const load = async () => {
@@ -73,9 +78,10 @@ export default function PoCalendar() {
 
   /** Entri per hari: jadwal tahap (spesifik) + PO yang sedang berjalan (rentang Est. Mulai–Selesai). */
   const entriesOf = (ds) => {
-    const sched = schedules.filter((s) => s.date === ds).map((s) => ({
+    const sched = schedules.filter((s) => s.date <= ds && ds <= (s.end_date || s.date)).map((s) => ({
       key: `s-${s.id}`, kind: "jadwal", cat: catOfStage(s.stage_number), sched: s,
-      po: poById[s.po_id], label: s.po_number, sub: s.client_name,
+      po: poById[s.po_id], label: s.po_number, sub: `T${stagePos(s.stage_number)} · ${s.client_name}`,
+      isStart: s.date === ds, isEnd: (s.end_date || s.date) === ds, multi: (s.end_date || s.date) !== s.date,
     }));
     const runs = activePos.filter((p) => p.est_start <= ds && ds <= p.est_end).map((p) => ({
       key: `p-${p.id}`, kind: "po", cat: catOfPo(p), po: p, label: p.po_number, sub: p.client_name,
@@ -86,11 +92,21 @@ export default function PoCalendar() {
 
   const weekdays = lang === "id" ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  const openAdd = (ds) => { setFormDate(ds); setFormPo(""); setFormStage(""); setOpen(true); };
+  const openAdd = (ds) => { setEditSched(null); setFormDate(ds); setFormEnd(ds); setFormPo(""); setFormStage(""); setOpen(true); };
+  const openEdit = (s) => {
+    setEditSched(s); setFormPo(s.po_id); setFormStage(String(s.stage_number));
+    setFormDate(s.date); setFormEnd(s.end_date || s.date); setOpen(true);
+  };
   const addSchedule = async () => {
     if (!formPo || !formStage || !formDate) { toast.error(t("selectPO")); return; }
-    try { await api.createSchedule({ po_id: formPo, stage_number: parseInt(formStage), date: formDate }); setOpen(false); load(); toast.success("Jadwal ditambah"); }
-    catch (e) { toast.error(e?.response?.data?.detail || "Gagal"); }
+    const end = formEnd || formDate;
+    if (end < formDate) { toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai"); return; }
+    const payload = { po_id: formPo, stage_number: parseInt(formStage), date: formDate, end_date: end };
+    try {
+      if (editSched) await api.updateSchedule(editSched.id, payload);
+      else await api.createSchedule(payload);
+      setOpen(false); load(); toast.success(editSched ? "Jadwal diperbarui" : "Jadwal ditambah");
+    } catch (e) { toast.error(e?.response?.data?.detail || "Gagal"); }
   };
   const delSchedule = async (sid) => {
     try { await api.deleteSchedule(sid); load(); toast.success("Jadwal dihapus"); }
@@ -159,7 +175,7 @@ export default function PoCalendar() {
                     {entries.slice(0, MAX_PILLS).map((e) => (
                       <span key={e.key} title={`${e.label} · ${e.sub}`}
                         className={`truncate rounded border px-1 py-px text-[10.5px] font-medium leading-tight ${CAT[e.cat].pill} ${e.kind === "jadwal" ? "border-solid" : "border-dashed"}`}>
-                        {e.kind === "jadwal" ? "● " : ""}{e.label}{e.sub ? ` · ${e.sub}` : ""}
+                        {e.kind === "jadwal" ? (e.multi && !e.isStart ? "↳ " : "● ") : ""}{e.label}{e.sub ? ` · ${e.sub}` : ""}
                       </span>
                     ))}
                     {entries.length > MAX_PILLS && <span className="px-1 text-[10px] font-medium text-muted-foreground">+{entries.length - MAX_PILLS} lainnya</span>}
@@ -189,9 +205,13 @@ export default function PoCalendar() {
                   {daySched.map((e) => (
                     <div key={e.key} className={`flex items-start gap-2 rounded-lg border-l-4 bg-card p-2.5 shadow-sm ring-1 ring-border ${e.cat === "kirim" ? "border-l-orange-500" : e.cat === "proses" ? "border-l-red-500" : "border-l-violet-500"}`}>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">{e.label} <span className="font-normal text-muted-foreground">· {e.sub}</span></div>
+                        <div className="truncate text-sm font-semibold">{e.label} <span className="font-normal text-muted-foreground">· {e.sched.client_name}</span></div>
                         <div className="text-xs text-muted-foreground">Tahap {stagePos(e.sched.stage_number)}: {stageName(e.sched.stage_number)}</div>
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          {e.multi ? <>{slash(e.sched.date)} → {slash(e.sched.end_date)} · hari ke-{dayIndex(e.sched.date, selectedDay)} dari {dayIndex(e.sched.date, e.sched.end_date)}</> : slash(e.sched.date)}
+                        </div>
                       </div>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" title="Ubah jadwal" onClick={() => openEdit(e.sched)}><Pencil className="h-3.5 w-3.5" /></Button>
                       {e.po && <Button asChild size="icon" variant="ghost" className="h-7 w-7"><Link to={`/po/pos/${e.po.id}`} title="Buka PO"><ArrowUpRight className="h-4 w-4" /></Link></Button>}
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" title="Hapus jadwal" onClick={() => delSchedule(e.sched.id)}><X className="h-4 w-4" /></Button>
                     </div>
@@ -226,11 +246,11 @@ export default function PoCalendar() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t("scheduleStage")} — {slash(formDate)}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editSched ? "Ubah Jadwal Tahap" : t("scheduleStage")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>{t("selectPO")}</Label>
-              <Select value={formPo} onValueChange={setFormPo}>
+              <Select value={formPo} onValueChange={setFormPo} disabled={!!editSched}>
                 <SelectTrigger data-testid="sched-po"><SelectValue placeholder={t("selectPO")} /></SelectTrigger>
                 <SelectContent>{pos.filter((p) => !p.computed?.is_completed).map((p) => <SelectItem key={p.id} value={p.id}>{p.po_number} · {p.client_name}</SelectItem>)}</SelectContent>
               </Select>
@@ -242,10 +262,24 @@ export default function PoCalendar() {
                 <SelectContent>{sortStages(selectedPoObj?.enabled_stages || []).map((n) => <SelectItem key={n} value={String(n)}>Tahap {stagePos(n)}: {stageName(n)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Tanggal mulai</Label>
+                <Input type="date" value={formDate} data-testid="sched-start"
+                  onChange={(e) => { const v = e.target.value; setFormDate(v); if (!formEnd || formEnd < v) setFormEnd(v); }} />
+              </div>
+              <div className="space-y-2">
+                <Label>Tanggal selesai</Label>
+                <Input type="date" value={formEnd} min={formDate} data-testid="sched-end" onChange={(e) => setFormEnd(e.target.value)} />
+              </div>
+            </div>
+            {formDate && formEnd && formEnd >= formDate && (
+              <p className="text-xs text-muted-foreground">{slash(formDate)} → {slash(formEnd)} ({dayIndex(formDate, formEnd)} hari)</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={addSchedule} data-testid="sched-submit">{t("addSchedule")}</Button>
+            <Button onClick={addSchedule} data-testid="sched-submit">{editSched ? "Simpan" : t("addSchedule")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

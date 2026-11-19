@@ -8,7 +8,8 @@
  *                       created_by, created_by_name, created_at,
  *                       updated_by_name, updated_at, history: [{ action, by_id, by_name, at, changes }] }
  *
- * Tanpa harga, tanpa kode, tanpa retur. Stok item = Σ masuk − Σ keluar (seluruh waktu).
+ * Harga & PPN (opsional) hanya dicatat di ITEM saat dibuat lewat "+ Item" (sekaligus mutasi masuk awal).
+ * Tanpa kode, tanpa retur. Stok item = Σ masuk − Σ keluar (seluruh waktu).
  */
 import { getDb, COL, COLLECTION_BY_TYPE, stripId, nowIso } from "@/server/mongo";
 import { HttpError } from "@/server/http";
@@ -51,6 +52,24 @@ export function buildItem(type, data) {
   return { nama_barang: nama, satuan: str(data.satuan) || "unit" };
 }
 
+/** Harga (opsional) — mode: per_satuan | per_kg (kertas) | total | custom. PPN nominal Rp (opsional). */
+export const PRICE_MODES = ["per_satuan", "per_kg", "total", "custom"];
+export function buildPrice(data) {
+  const mode = PRICE_MODES.includes(data?.harga_mode) ? data.harga_mode : "per_satuan";
+  const raw = str(data?.harga);
+  const harga = raw === "" ? null : num(raw);
+  if (harga !== null && !(harga >= 0)) throw new HttpError(400, "Harga tidak valid");
+  const ppnAda = !!data?.ppn_ada;
+  const ppnNominal = ppnAda ? num(data?.ppn_nominal) : 0;
+  return {
+    harga_mode: mode,
+    harga,
+    harga_label: mode === "custom" ? str(data?.harga_label) : "",
+    ppn_ada: ppnAda,
+    ppn_nominal: ppnNominal,
+  };
+}
+
 /** Kunci unik item (untuk mencegah duplikat). */
 export function itemKey(type, it) {
   if (type === "paper") {
@@ -90,7 +109,7 @@ export async function assertNoDuplicate(type, item, excludeId = null) {
   const all = await db.collection(COL.stockItems).find({ type }, { projection: { _id: 0 } }).toArray();
   const key = itemKey(type, item);
   if (all.some((x) => x.id !== excludeId && itemKey(type, x) === key)) {
-    throw new HttpError(400, "Item dengan data yang sama sudah ada");
+    throw new HttpError(400, "Item ini sudah ada. Untuk menambah stok, klik panah hijau pada item tersebut.");
   }
 }
 
@@ -98,12 +117,14 @@ export async function assertNoDuplicate(type, item, excludeId = null) {
 export async function stockByItem(type, { excludeId = null } = {}) {
   const db = await getDb();
   const rows = await db.collection(collectionFor(type))
-    .find({}, { projection: { _id: 0, id: 1, item_id: 1, jenis_transaksi: 1, jumlah: 1, date: 1, time: 1 } })
+    .find({}, { projection: { _id: 0, id: 1, item_id: 1, jenis_transaksi: 1, jumlah: 1, date: 1, time: 1, supplier: 1 } })
     .toArray();
   const acc = {};
   for (const m of rows) {
     if (excludeId && m.id === excludeId) continue;
-    const a = (acc[m.item_id] ||= { stock: 0, masuk: 0, keluar: 0, count: 0, last: "" });
+    const a = (acc[m.item_id] ||= { stock: 0, masuk: 0, keluar: 0, count: 0, last: "", suppliers: [] });
+    const sup = str(m.supplier);
+    if (m.jenis_transaksi === "masuk" && sup && !a.suppliers.some((x) => x.toLowerCase() === sup.toLowerCase())) a.suppliers.push(sup);
     const q = num(m.jumlah);
     if (m.jenis_transaksi === "masuk") { a.stock += q; a.masuk += q; } else { a.stock -= q; a.keluar += q; }
     a.count += 1;
@@ -131,6 +152,7 @@ export async function listItemsWithStock(type) {
     total_keluar: stock[it.id]?.keluar ?? 0,
     mutation_count: stock[it.id]?.count ?? 0,
     last_mutation: stock[it.id]?.last || null,
+    suppliers: stock[it.id]?.suppliers || [],
   }));
   out.sort((a, b) => a.label.localeCompare(b.label, "id", { numeric: true }));
   return out;
@@ -161,7 +183,7 @@ export function buildMutation(data) {
     time: normTime(data.time),
     year: Number(String(data.date).slice(0, 4)),
     supplier: jenis === "masuk" ? str(data.supplier) : "",
-    nama_cetakan: jenis === "keluar" ? str(data.nama_cetakan) : "",
+    nama_cetakan: str(data.nama_cetakan),
     keterangan: str(data.keterangan),
   };
 }

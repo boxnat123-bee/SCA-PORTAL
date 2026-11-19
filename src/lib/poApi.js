@@ -19,6 +19,7 @@ export const deletePhoto = (poId, num, fileId) => api.delete(`/po/pos/${poId}/st
 
 export const listSchedules = () => api.get("/po/schedules").then((r) => r.data);
 export const createSchedule = (payload) => api.post("/po/schedules", payload).then((r) => r.data);
+export const updateSchedule = (id, payload) => api.put(`/po/schedules/${id}`, payload).then((r) => r.data);
 export const deleteSchedule = (id) => api.delete(`/po/schedules/${id}`).then((r) => r.data);
 
 export const poDashboard = () => api.get("/po/dashboard").then((r) => r.data);

@@ -22,7 +22,7 @@ import PageContainer from "@/components/layout/PageContainer";
 // Angka dibandingkan dengan titik maupun koma (65.5 = 65,5), dan "x" pada ukuran boleh pakai spasi.
 const norm = (v) => String(v ?? "").toLowerCase().replace(/,/g, ".").replace(/\s*[x×]\s*/g, "x");
 const matchAll = (hay, tokens) => tokens.every((t) => hay.includes(t));
-const supplierText = () => "";
+const supplierText = (item) => (item.suppliers || []).join(" ");
 
 const CATEGORIES = [
   { value: "all", label: "Semua Stok" },
@@ -105,18 +105,15 @@ export default function StockReport() {
   const paperTotal = useMemo(() => filtered ? paperRows.filter(isRim).reduce((a, p) => a + supStock(p, fSupplier), 0) : (data?.paper || []).filter(isRim).reduce((a, p) => a + Math.max(p.stock, 0), 0), [paperRows, fSupplier, filtered, data]);
   const inkTotal = useMemo(() => filtered ? inkRows.reduce((a, p) => a + supStock(p, fSupplier), 0) : (data?.ink || []).reduce((a, p) => a + Math.max(p.stock, 0), 0), [inkRows, fSupplier, filtered, data]);
 
-  const badges = (item) => (
-    <>
-      <span className="whitespace-nowrap rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-400">Masuk: <b>{formatNumber(item.total_masuk, 2)}</b></span>
-      <span className="whitespace-nowrap rounded bg-rose-500/10 px-1.5 py-0.5 text-[11px] text-rose-700 dark:text-rose-400">Keluar: <b>{formatNumber(item.total_keluar, 2)}</b></span>
-    </>
-  );
+  const badges = (item) => (item.suppliers || []).length ? (
+    <span className="text-sm">{item.suppliers.join(", ")}</span>
+  ) : <span className="text-xs text-muted-foreground">-</span>;
 
   return (
     <PageContainer
       testid="stock-report-page"
       pageTitle="Laporan Stok Ringkas"
-      pageDescription={`Rekap stok saat ini (tanpa nominal) — tahun ${data?.year || ""}.`}
+      pageDescription="Stok akhir saat ini per item beserta supplier."
       pageHeaderAction={(
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="gap-2" data-testid="pdf-paper-mutations" onClick={() => dl("/pdf/paper-mutations", "laporan-mutasi-kertas.pdf")}>
@@ -129,7 +126,7 @@ export default function StockReport() {
             <FileDown className="h-4 w-4" /> Mutasi Lain
           </Button>
           <Button variant="outline" className="gap-2" data-testid="pdf-stock-ringkas" onClick={() => dl("/pdf/stock-ringkas", "laporan-stok-ringkas.pdf")}>
-            <FileDown className="h-4 w-4" /> Stok Ringkas
+            <FileDown className="h-4 w-4" /> Stok Akhir
           </Button>
         </div>
       )}
@@ -142,7 +139,7 @@ export default function StockReport() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input id="stock-search" data-testid="stock-search" value={query} onChange={(e) => setQuery(e.target.value)}
-                placeholder="cth: art paper 150, 65x100, cyan, karton…" className="pl-9 pr-9" />
+                placeholder="cth: art paper 150, 65x100, cyan, nama supplier…" className="pl-9 pr-9" />
               {query && (
                 <button type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
@@ -179,7 +176,7 @@ export default function StockReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Jenis</TableHead><TableHead>Gramatur</TableHead>
-                  <TableHead>Ukuran</TableHead><TableHead>Masuk / Keluar</TableHead>
+                  <TableHead>Ukuran</TableHead><TableHead>Supplier</TableHead>
                   <TableHead className="text-right">Stok</TableHead>
                 </TableRow>
               </TableHeader>
@@ -189,7 +186,7 @@ export default function StockReport() {
                     <TableCell className="font-medium">{p.jenis_kertas}</TableCell>
                     <TableCell>{formatNumber(p.gramatur, 2)}</TableCell>
                     <TableCell className="whitespace-nowrap">{formatNumber(p.panjang, 2)}x{formatNumber(p.lebar, 2)} cm</TableCell>
-                    <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
+                    <TableCell className="max-w-[260px] whitespace-normal">{badges(p)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} {p.satuan || "Rim"}</TableCell>
                   </TableRow>
                 )) : searching ? <NoMatch colSpan={5} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
@@ -205,13 +202,13 @@ export default function StockReport() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Jenis Tinta</TableHead><TableHead>Masuk / Keluar</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
+                <TableRow><TableHead>Jenis Tinta</TableHead><TableHead>Supplier</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
               </TableHeader>
               <TableBody data-testid="ink-stock-table">
                 {inkRows.length ? inkRows.map((p, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">{p.jenis_tinta}</TableCell>
-                    <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
+                    <TableCell className="max-w-[260px] whitespace-normal">{badges(p)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} Kg</TableCell>
                   </TableRow>
                 )) : searching ? <NoMatch colSpan={3} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={3} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
@@ -228,14 +225,14 @@ export default function StockReport() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow><TableHead>Nama Barang</TableHead><TableHead>Satuan</TableHead><TableHead>Masuk / Keluar</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
+              <TableRow><TableHead>Nama Barang</TableHead><TableHead>Satuan</TableHead><TableHead>Supplier</TableHead><TableHead className="text-right">Stok</TableHead></TableRow>
             </TableHeader>
             <TableBody data-testid="other-stock-table">
               {otherRows.length ? otherRows.map((p, i) => (
                 <TableRow key={i}>
                   <TableCell className="font-medium">{p.nama_barang}</TableCell>
                   <TableCell>{p.satuan || "-"}</TableCell>
-                  <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
+                  <TableCell className="max-w-[260px] whitespace-normal">{badges(p)}</TableCell>
                   <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock, 2)} {p.satuan || ""}</TableCell>
                 </TableRow>
               )) : searching ? <NoMatch colSpan={4} q={query.trim()} /> : <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Tambah item di menu Mutasi.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}

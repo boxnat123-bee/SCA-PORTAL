@@ -59,12 +59,12 @@ export async function otherMutationsPdf(rows, periodLabel) {
 
 export async function stockSummaryPdf(stock, periodLabel) {
   const ctx = await createDoc();
-  docHeader(ctx, "Laporan Stok", periodLabel);
+  docHeader(ctx, "Laporan Stok Akhir", periodLabel);
   const rowsOf = (list, nameFn) => list.map((x) => [
-    nameFn(x), x.satuan || "-", formatNum(x.total_masuk), formatNum(x.total_keluar), formatNum(x.stock),
+    nameFn(x), x.satuan || "-", (x.suppliers || []).join(", ") || "-", formatNum(x.stock),
   ]);
-  const hdr = (first) => [first, "Satuan", "Total Masuk", "Total Keluar", "Stok"];
-  const opt = { weights: [2.6, 0.8, 1, 1, 1], rightCols: [2, 3, 4], wrap: true };
+  const hdr = (first) => [first, "Satuan", "Supplier", "Stok"];
+  const opt = { weights: [2.4, 0.8, 2.4, 0.9], rightCols: [3], wrap: true };
 
   section(ctx, "Stok Kertas");
   drawTable(ctx, hdr("Jenis Kertas (Gram, Ukuran)"), rowsOf(stock.paper || [],

@@ -73,7 +73,7 @@ export default function CommandPalette({ open, onOpenChange }) {
       { to: "/po", label: "Dashboard PO", icon: ICONS.dashboard, show: true },
       { to: "/po/pos", label: "Daftar PO", icon: ICONS.poList, show: true },
       { to: "/po/pos/new", label: "Buat PO Baru", icon: ListTodo, show: true },
-      { to: "/po/kalender", label: "Kalender Jadwal", icon: ICONS.kalender, show: true },
+      { to: "/po/kalender", label: "Kalender Produksi", icon: ICONS.kalender, show: true },
     ];
 
     const hpp = perms.canHpp

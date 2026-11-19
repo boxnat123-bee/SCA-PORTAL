@@ -18,7 +18,7 @@ const ROUTE_LABELS = {
   pos: "Daftar PO",
   new: "PO Baru",
   edit: "Ubah PO",
-  kalender: "Kalender Jadwal",
+  kalender: "Kalender Produksi",
   hpp: "Kalkulator HPP",
   "stok-klien": "Stok Klien",
   riwayat: "Riwayat Mutasi",

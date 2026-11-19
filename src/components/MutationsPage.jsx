@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
-import { formatNumber, todayStr, fmtDate, fmtDateTime } from "@/lib/format";
+import { formatNumber, formatRupiah, todayStr, fmtDate, fmtDateTime } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,20 +44,50 @@ const showVal = (f, v) => {
   return String(v);
 };
 
+/* ---------------- Harga (opsional) ---------------- */
+const priceModes = (type, satuan) => [
+  { v: "per_satuan", l: `Per ${satuan || (type === "ink" ? "Kg" : "satuan")}` },
+  ...(type === "paper" ? [{ v: "per_kg", l: "Per Kg" }] : []),
+  { v: "total", l: "Total kiriman" },
+  { v: "custom", l: "Custom" },
+];
+export function priceText(it) {
+  if (it?.harga === null || it?.harga === undefined || it?.harga === "") return "";
+  const basis = it.harga_mode === "total" ? "total kiriman"
+    : it.harga_mode === "per_kg" ? "per Kg"
+    : it.harga_mode === "custom" ? (it.harga_label || "custom")
+    : `per ${it.satuan || "satuan"}`;
+  return `${formatRupiah(it.harga)} ${basis}${it.ppn_ada ? ` · PPN ${formatRupiah(it.ppn_nominal)}` : ""}`;
+}
+
 /* ---------------- Dialog item (tambah / ubah) ---------------- */
 function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
-  const blank = { jenis_kertas: "", gramatur: "", panjang: "", lebar: "", satuan: type === "paper" ? "Rim" : "", jenis_tinta: "", nama_barang: "" };
+  const blank = {
+    jenis_kertas: "", gramatur: "", panjang: "", lebar: "", satuan: type === "paper" ? "Rim" : "", jenis_tinta: "", nama_barang: "",
+    jumlah: "", supplier: "", date: "", time: "", keterangan: "",
+    harga_mode: "per_satuan", harga: "", harga_label: "", ppn_ada: false, ppn_nominal: "",
+  };
   const [f, setF] = useState(blank);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { if (open) setF(item ? { ...blank, ...item } : blank); /* eslint-disable-next-line */ }, [open, item]);
-  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+  useEffect(() => {
+    if (!open) return;
+    if (item) setF({ ...blank, ...item, harga: item.harga ?? "", ppn_nominal: item.ppn_nominal || "", ppn_ada: !!item.ppn_ada });
+    else setF({ ...blank, date: todayStr(), time: nowTime() });
+    // eslint-disable-next-line
+  }, [open, item]);
+  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e?.target ? (e.target.type === "checkbox" ? e.target.checked : e.target.value) : e }));
+  const satuan = type === "ink" ? "Kg" : (f.satuan || (type === "paper" ? "Rim" : "satuan"));
 
   const save = async () => {
+    if (!item) {
+      if (!(Number(f.jumlah) > 0)) return toast.error("Jumlah wajib diisi (lebih dari 0)");
+      if (!String(f.supplier).trim()) return toast.error("Supplier wajib diisi");
+    }
     setSaving(true);
     try {
       if (item) await api.put(`/${type}/items/${item.id}`, f);
       else await api.post(`/${type}/items`, f);
-      toast.success(item ? "Item diperbarui." : "Item ditambahkan.");
+      toast.success(item ? "Item diperbarui." : "Item ditambahkan & stok masuk dicatat.");
       onOpenChange(false);
       onSaved();
     } catch (e) { toast.error(apiError(e)); } finally { setSaving(false); }
@@ -65,10 +95,12 @@ function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" data-testid="item-dialog">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg" data-testid="item-dialog">
         <DialogHeader>
           <DialogTitle>{item ? "Ubah Item" : `Tambah Item ${TITLES[type]}`}</DialogTitle>
-          <DialogDescription>Item dibuat sekali, lalu stok dicatat lewat panah masuk / keluar.</DialogDescription>
+          <DialogDescription>
+            {item ? "Ubah data item & harga. Jumlah/supplier diubah lewat ikon Detail." : "Isi data item dan stok masuk pertama. Selanjutnya stok dicatat lewat panah hijau / merah."}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
           {type === "paper" && (
@@ -87,11 +119,50 @@ function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
               <p className="text-xs text-muted-foreground">Satuan tinta: Kg</p></div>
           )}
           {type === "other" && (
-            <>
+            <div className="grid grid-cols-[1fr_120px] gap-2">
               <div className="space-y-1.5"><Label>Nama Barang</Label><Input value={f.nama_barang} onChange={set("nama_barang")} /></div>
-              <div className="space-y-1.5"><Label>Satuan</Label><Input value={f.satuan} onChange={set("satuan")} placeholder="cth: pcs, roll, liter" /></div>
-            </>
+              <div className="space-y-1.5"><Label>Satuan</Label><Input value={f.satuan} onChange={set("satuan")} placeholder="pcs, roll…" /></div>
+            </div>
           )}
+
+          {!item && (
+            <div className="grid gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.04] p-3">
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400"><ArrowDownToLine className="h-4 w-4" /> Stok masuk pertama</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5"><Label>Jumlah ({satuan})</Label><Input type="number" inputMode="decimal" value={f.jumlah} onChange={set("jumlah")} data-testid="item-jumlah" /></div>
+                <div className="space-y-1.5"><Label>Supplier</Label><Input value={f.supplier} onChange={set("supplier")} data-testid="item-supplier" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5"><Label>Tanggal</Label><Input type="date" value={f.date} onChange={set("date")} /></div>
+                <div className="space-y-1.5"><Label>Waktu</Label><Input type="time" value={f.time} onChange={set("time")} /></div>
+              </div>
+              <div className="space-y-1.5"><Label>Keterangan <span className="text-muted-foreground">(opsional)</span></Label><Input value={f.keterangan} onChange={set("keterangan")} /></div>
+            </div>
+          )}
+
+          <div className="grid gap-3 rounded-lg border p-3">
+            <div className="text-sm font-semibold">Harga & PPN <span className="font-normal text-muted-foreground">(opsional)</span></div>
+            <div className="flex flex-wrap gap-1.5">
+              {priceModes(type, satuan).map((m) => (
+                <button key={m.v} type="button" onClick={() => setF((p) => ({ ...p, harga_mode: m.v }))}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${f.harga_mode === m.v ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent"}`}>
+                  {m.l}
+                </button>
+              ))}
+            </div>
+            <div className={`grid gap-2 ${f.harga_mode === "custom" ? "grid-cols-2" : ""}`}>
+              {f.harga_mode === "custom" && (
+                <div className="space-y-1.5"><Label>Harga per…</Label><Input value={f.harga_label} onChange={set("harga_label")} placeholder="cth: per lembar" /></div>
+              )}
+              <div className="space-y-1.5"><Label>Harga (Rp)</Label><Input type="number" inputMode="decimal" value={f.harga} onChange={set("harga")} placeholder="Boleh dikosongkan" /></div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" className="h-4 w-4 accent-primary" checked={!!f.ppn_ada} onChange={set("ppn_ada")} /> Ada PPN
+            </label>
+            {f.ppn_ada && (
+              <div className="space-y-1.5"><Label>Nominal PPN (Rp)</Label><Input type="number" inputMode="decimal" value={f.ppn_nominal} onChange={set("ppn_nominal")} /></div>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
@@ -154,11 +225,10 @@ function MoveDialog({ type, state, onClose, onSaved }) {
             <div className="space-y-1.5"><Label>Tanggal</Label><Input type="date" value={f.date || ""} onChange={set("date")} /></div>
             <div className="space-y-1.5"><Label>Waktu</Label><Input type="time" value={f.time || ""} onChange={set("time")} /></div>
           </div>
-          {masuk ? (
+          {masuk && (
             <div className="space-y-1.5"><Label>Supplier <span className="text-muted-foreground">(opsional)</span></Label><Input value={f.supplier || ""} onChange={set("supplier")} /></div>
-          ) : (
-            <div className="space-y-1.5"><Label>Nama Cetakan</Label><Input value={f.nama_cetakan || ""} onChange={set("nama_cetakan")} placeholder="cth: Box Kue Lapis 20x20" data-testid="move-cetakan" /></div>
           )}
+          <div className="space-y-1.5"><Label>Nama Cetakan <span className="text-muted-foreground">(opsional)</span></Label><Input value={f.nama_cetakan || ""} onChange={set("nama_cetakan")} placeholder="cth: Box Kue Lapis 20x20" data-testid="move-cetakan" /></div>
           <div className="space-y-1.5"><Label>Keterangan <span className="text-muted-foreground">(opsional)</span></Label><Textarea rows={2} value={f.keterangan || ""} onChange={set("keterangan")} /></div>
         </div>
         <DialogFooter>
@@ -190,6 +260,7 @@ function DetailDialog({ type, item, onClose, onEdit, onDelete, version }) {
           <DialogDescription>
             Stok sekarang <b>{formatNumber(it?.stock, 2)} {it?.satuan}</b> · {muts.length} mutasi.
             Item dibuat oleh {it?.created_by_name || "-"} ({fmtDateTime(it?.created_at)}).
+            {priceText(it) && <> Harga: <b>{priceText(it)}</b>.</>}
           </DialogDescription>
         </DialogHeader>
         {isLoading ? <TableSkeleton columns={4} rows={4} /> : muts.length === 0 ? (
@@ -212,7 +283,9 @@ function DetailDialog({ type, item, onClose, onEdit, onDelete, version }) {
                         <span className="text-sm text-muted-foreground">{fmtDate(m.date)} {m.time || ""}</span>
                       </div>
                       <div className="mt-1 text-sm">
-                        {masuk ? <>Supplier: <b>{m.supplier || "-"}</b></> : <>Nama Cetakan: <b>{m.nama_cetakan || "-"}</b></>}
+                        {masuk && <>Supplier: <b>{m.supplier || "-"}</b>{m.nama_cetakan ? " · " : ""}</>}
+                        {(m.nama_cetakan || !masuk) && <>Nama Cetakan: <b>{m.nama_cetakan || "-"}</b></>}
+                        {m.awal && <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">stok awal</span>}
                         {m.keterangan ? <span className="text-muted-foreground"> · {m.keterangan}</span> : null}
                       </div>
                     </div>
@@ -354,7 +427,10 @@ export default function MutationsPage({ type }) {
                 )}
                 {filtered.map((it) => (
                   <TableRow key={it.id} data-testid={`item-row-${it.id}`}>
-                    <TableCell className="font-medium">{it.label}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{it.label}</div>
+                      {priceText(it) && <div className="text-[11px] text-muted-foreground">{priceText(it)}</div>}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{it.satuan}</TableCell>
                     <TableCell className={`whitespace-nowrap text-right font-semibold [font-variant-numeric:tabular-nums] ${Number(it.stock) <= 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
                       {formatNumber(it.stock, 2)}

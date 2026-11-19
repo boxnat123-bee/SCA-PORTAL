@@ -75,7 +75,7 @@ export default function AppShell() {
   const poMenu = [
     { to: "/po", label: "Dashboard PO", icon: LayoutDashboard, end: true },
     { to: "/po/pos", label: "Daftar PO", icon: ListTodo },
-    { to: "/po/kalender", label: "Kalender Jadwal", icon: CalendarDays },
+    { to: "/po/kalender", label: "Kalender Produksi", icon: CalendarDays },
   ];
 
   const hppMenu = perms.canHpp ? [{ to: "/hpp", label: "Kalkulator HPP", icon: Calculator, end: true }] : [];

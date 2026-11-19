@@ -2,7 +2,7 @@ import { handle, json, readJson, HttpError } from "@/server/http";
 import { getCurrentUser, logAudit } from "@/server/auth";
 import { getDb, COL, nowIso, stripId } from "@/server/mongo";
 import {
-  collectionFor, buildItem, assertNoDuplicate, getItemOr404, identityOf, itemLabel,
+  collectionFor, buildItem, buildPrice, assertNoDuplicate, getItemOr404, identityOf, itemLabel,
   stockByItem, sortMutationsDesc,
 } from "@/server/mutations";
 
@@ -26,7 +26,7 @@ export const PUT = handle(async (req, { params }) => {
   const { type, id } = await params;
   const existing = await getItemOr404(type, id);
   const body = await readJson(req);
-  const item = buildItem(type, body);
+  const item = { ...buildItem(type, body), ...buildPrice(body) };
   await assertNoDuplicate(type, item, id);
   const db = await getDb();
   await db.collection(COL.stockItems).updateOne(
