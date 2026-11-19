@@ -192,7 +192,7 @@ export default function AppShell() {
               <Search className="h-4 w-4" />
             </Button>
             <Select value={lang} onValueChange={setLang}>
-              <SelectTrigger className="h-9 w-[124px]" data-testid="lang-toggle" aria-label={L("Bahasa", "Language")}>
+              <SelectTrigger className="hidden h-9 w-[124px] sm:flex" data-testid="lang-toggle" aria-label={L("Bahasa", "Language")}>
                 <div className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{en ? "English" : "Indonesia"}</div>
               </SelectTrigger>
               <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>

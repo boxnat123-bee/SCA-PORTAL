@@ -265,3 +265,27 @@ th.text-right {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
+
+/* iPhone/iPad (Safari): kolom tanggal & waktu punya lebar bawaan sehingga bertabrakan
+   di grid 2 kolom. Paksa mengikuti lebar kolomnya. */
+@layer base {
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    input[type="month"] {
+        -webkit-appearance: none;
+        appearance: none;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        display: block;
+    }
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value,
+    input[type="datetime-local"]::-webkit-date-and-time-value {
+        text-align: left;
+        margin: 0;
+    }
+    /* Anak grid/flex boleh menyusut (mencegah isi melebar keluar kolom). */
+    .grid > * { min-width: 0; }
+}
