@@ -92,6 +92,7 @@ export default function InvoiceDetail({ open, onOpenChange, invoice, onEdit, onT
           <Row label="No. Invoice" value={invoice.invoice_number || "-"} />
           <Row label="Tanggal Invoice" value={formatDateLong(invoice.invoice_date)} />
           <Row label="Jatuh Tempo" value={formatDateLong(invoice.due_date)} />
+          {invoice.status === "lunas" && invoice.paid_date && <Row label="Tanggal Lunas" value={formatDateLong(invoice.paid_date)} />}
           <Row label="Tanggal PO" value={formatDateLong(invoice.po_date)} />
           <Row label="No. PO" value={invoice.po_number || "-"} />
           <Row label="No. Surat Jalan" value={invoice.delivery_note_number || "-"} />

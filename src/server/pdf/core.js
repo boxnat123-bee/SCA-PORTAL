@@ -15,7 +15,15 @@ export const C = {
   amber: rgb(0.961, 0.62, 0.043),
   emerald: rgb(0.02, 0.588, 0.412),
   violet: rgb(0.545, 0.361, 0.965),
+  navy: rgb(0.118, 0.227, 0.541),     // #1e3a8a — warna aksen kop
+  slate: rgb(0.2, 0.255, 0.333),      // #334155 — teks header tabel
+  thead: rgb(0.945, 0.957, 0.976),    // #f1f4f9 — latar header tabel
+  rule: rgb(0.886, 0.91, 0.941),      // #e2e8f0 — garis antar baris
+  muted: rgb(0.278, 0.333, 0.412),    // #475569
+  green: rgb(0.016, 0.471, 0.341),    // #047857
+  red: rgb(0.725, 0.11, 0.11),        // #b91c1c
 };
+const FOOTER_SPACE = 22; // ruang di bawah untuk nomor halaman
 
 export const SERIES_COLORS = [C.primary, C.rose, C.sky, C.amber, C.emerald, C.violet];
 
@@ -40,7 +48,7 @@ export async function createDoc({ landscape = false } = {}) {
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const size = landscape ? [A4[1], A4[0]] : [A4[0], A4[1]];
-  const ctx = { pdf, font, bold, size, margin: 34, page: null, y: 0, landscape };
+  const ctx = { pdf, font, bold, size, margin: 34, page: null, y: 0, landscape, pageHeader: null };
   newPage(ctx);
   return ctx;
 }
@@ -48,6 +56,8 @@ export async function createDoc({ landscape = false } = {}) {
 export function newPage(ctx) {
   ctx.page = ctx.pdf.addPage(ctx.size);
   ctx.y = ctx.size[1] - ctx.margin;
+  // Halaman lanjutan: kop ringkas (judul + garis) supaya tetap jelas dokumen apa.
+  if (ctx.pageHeader && ctx.pdf.getPageCount() > 1) ctx.pageHeader(ctx);
 }
 
 export function contentWidth(ctx) {
@@ -55,7 +65,7 @@ export function contentWidth(ctx) {
 }
 
 export function ensure(ctx, h) {
-  if (ctx.y - h < ctx.margin) {
+  if (ctx.y - h < ctx.margin + FOOTER_SPACE) {
     newPage(ctx);
     return true;
   }
@@ -87,30 +97,76 @@ export function truncate(ctx, str, maxWidth, size = 8, bold = false) {
   return s + "..";
 }
 
-export function docHeader(ctx, title, periodLabel) {
-  const printed = new Date();
-  text(ctx, title, { size: 16, bold: true, color: C.header });
-  ctx.y -= 14;
-  text(ctx, `Periode: ${periodLabel}`, { size: 8.5, color: C.sub });
-  ctx.y -= 11;
-  const d = printed;
-  const ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-  text(ctx, `Tanggal cetak: ${d.getDate()} ${ID[d.getMonth()]} ${d.getFullYear()}`, { size: 8.5, color: C.sub });
-  ctx.y -= 6;
-  ctx.page.drawLine({
-    start: { x: ctx.margin, y: ctx.y },
-    end: { x: ctx.size[0] - ctx.margin, y: ctx.y },
-    thickness: 1,
-    color: C.primary,
+const pad2 = (n) => String(n).padStart(2, "0");
+/** Waktu cetak WIB (server berjalan di UTC). */
+export function nowWibLabel() {
+  const d = new Date(Date.now() + 7 * 3600 * 1000);
+  return `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
+}
+
+/**
+ * Kop dokumen: kotak "SCA", nama perusahaan, judul; kanan: Periode / Tanggal cetak / Dicetak oleh.
+ * opts: { printedBy, periodName = "Periode" }
+ */
+export function docHeader(ctx, title, periodLabel, { printedBy = "", periodName = "Periode" } = {}) {
+  const top = ctx.y;
+  const x0 = ctx.margin;
+  const box = 32;
+  ctx.page.drawRectangle({ x: x0, y: top - box, width: box, height: box, color: C.navy });
+  const mono = "SCA";
+  const mw = ctx.bold.widthOfTextAtSize(mono, 10);
+  ctx.page.drawText(mono, { x: x0 + (box - mw) / 2, y: top - box / 2 - 3.5, size: 10, font: ctx.bold, color: C.white });
+  ctx.page.drawText("PERCETAKAN SCA", { x: x0 + box + 10, y: top - 10, size: 7.5, font: ctx.bold, color: C.muted });
+  ctx.page.drawText(sanitize(title), { x: x0 + box + 10, y: top - 27, size: 15, font: ctx.bold, color: C.text });
+
+  // Meta kanan (label abu-abu, nilai tebal)
+  const meta = [[periodName, periodLabel || "-"], ["Tanggal cetak", nowWibLabel()]];
+  if (printedBy) meta.push(["Dicetak oleh", printedBy]);
+  const right = ctx.size[0] - ctx.margin;
+  const valW = Math.max(...meta.map(([, v]) => widthOf(ctx, v, 8, true)));
+  const labW = Math.max(...meta.map(([l]) => widthOf(ctx, l, 8)));
+  meta.forEach(([l, v], i) => {
+    const y = top - 8 - i * 11;
+    ctx.page.drawText(sanitize(l), { x: right - valW - 10 - labW, y, size: 8, font: ctx.font, color: C.muted });
+    ctx.page.drawText(sanitize(v), { x: right - valW, y, size: 8, font: ctx.bold, color: C.text });
   });
+
+  ctx.y = top - box - 10;
+  ctx.page.drawRectangle({ x: x0, y: ctx.y - 2.2, width: contentWidth(ctx), height: 2.2, color: C.navy });
   ctx.y -= 16;
+
+  // Halaman berikutnya: kop ringkas
+  ctx.pageHeader = (c) => {
+    c.page.drawText(sanitize(title), { x: c.margin, y: c.y - 10, size: 10, font: c.bold, color: C.text });
+    const t = "PERCETAKAN SCA";
+    const tw = c.bold.widthOfTextAtSize(t, 7.5);
+    c.page.drawText(t, { x: c.size[0] - c.margin - tw, y: c.y - 9, size: 7.5, font: c.bold, color: C.muted });
+    c.y -= 16;
+    c.page.drawRectangle({ x: c.margin, y: c.y - 1.2, width: contentWidth(c), height: 1.2, color: C.navy });
+    c.y -= 12;
+  };
+}
+
+/** Baris kartu ringkasan (kotak tegas, sudut lancip). cards: [{ label, value, color? }] */
+export function summaryCards(ctx, cards) {
+  const gap = 10;
+  const h = 40;
+  ensure(ctx, h + 10);
+  const w = (contentWidth(ctx) - gap * (cards.length - 1)) / cards.length;
+  cards.forEach((c, i) => {
+    const x = ctx.margin + i * (w + gap);
+    ctx.page.drawRectangle({ x, y: ctx.y - h, width: w, height: h, borderColor: C.border, borderWidth: 0.8 });
+    ctx.page.drawText(sanitize(String(c.label).toUpperCase()), { x: x + 10, y: ctx.y - 13, size: 7, font: ctx.font, color: C.muted });
+    ctx.page.drawText(sanitize(c.value), { x: x + 10, y: ctx.y - 31, size: 12.5, font: ctx.bold, color: c.color || C.text });
+  });
+  ctx.y -= h + 14;
 }
 
 export function section(ctx, title) {
   ensure(ctx, 40);
   ctx.y -= 6;
-  text(ctx, title, { size: 11.5, bold: true, color: C.primary });
-  ctx.y -= 14;
+  text(ctx, title, { size: 11, bold: true, color: C.text });
+  ctx.y -= 12;
 }
 
 /**
@@ -149,20 +205,20 @@ export function wrapLines(ctx, str, maxWidth, size = 8, bold = false) {
  * Pita judul grup (mis. nama item) — latar terang dengan aksen biru di kiri.
  * right: teks kecil rata kanan (mis. satuan / jumlah mutasi).
  */
-export function groupTitle(ctx, title, right = "", { minSpace = 70 } = {}) {
+export function groupTitle(ctx, title, right = "", { minSpace = 70, sub = "" } = {}) {
   ensure(ctx, minSpace);
-  const total = contentWidth(ctx);
-  const h = 18;
-  const yBot = ctx.y - h;
-  ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: h, color: rgb(0.906, 0.933, 0.988) });
-  ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: 3, height: h, color: C.primary });
-  ctx.page.drawText(sanitize(title), { x: ctx.margin + 9, y: yBot + 5.5, size: 9.5, font: ctx.bold, color: C.header });
+  const y = ctx.y - 10;
+  ctx.page.drawText(sanitize(title), { x: ctx.margin + 1, y, size: 10, font: ctx.bold, color: C.text });
+  if (sub) {
+    const tw = ctx.bold.widthOfTextAtSize(sanitize(title), 10);
+    ctx.page.drawText(sanitize(sub), { x: ctx.margin + 1 + tw + 6, y, size: 9, font: ctx.font, color: C.muted });
+  }
   if (right) {
     const r = sanitize(right);
     const tw = ctx.font.widthOfTextAtSize(r, 8);
-    ctx.page.drawText(r, { x: ctx.margin + total - 8 - tw, y: yBot + 6, size: 8, font: ctx.font, color: C.sub });
+    ctx.page.drawText(r, { x: ctx.size[0] - ctx.margin - tw, y: y + 0.5, size: 8, font: ctx.font, color: C.muted });
   }
-  ctx.y = yBot;
+  ctx.y -= 16;
 }
 
 export function drawTable(ctx, header, rows, {
@@ -170,6 +226,7 @@ export function drawTable(ctx, header, rows, {
   colColors = {},      // { indexKolom: warna } untuk isi sel (bukan header)
   boldCols = [],       // kolom isi yang ditebalkan
   onPageBreak = null,  // dipanggil di halaman baru sebelum header diulang (mis. ulang judul grup)
+  footRow = null,      // baris TOTAL (tebal, garis atas tegas)
 } = {}) {
   const total = contentWidth(ctx);
   const w = weights && weights.length === header.length ? weights : header.map(() => 1);
@@ -186,7 +243,7 @@ export function drawTable(ctx, header, rows, {
   });
   const heightOf = (lines) => Math.max(baseH, Math.max(...lines.map((l) => l.length)) * lineH + 6.5);
 
-  const drawRow = (cells, { isHeader = false, zebra = false } = {}) => {
+  const drawRow = (cells, { isHeader = false, isFoot = false } = {}) => {
     const lines = layout(cells, isHeader);
     const rowH = heightOf(lines);
     if (ensure(ctx, rowH) && !isHeader) {
@@ -196,25 +253,34 @@ export function drawTable(ctx, header, rows, {
     const yTop = ctx.y;
     const yBot = yTop - rowH;
     if (isHeader) {
-      ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: rowH, color: C.header });
-    } else if (zebra) {
-      ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: rowH, color: C.light });
+      ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: rowH, color: C.thead });
+      ctx.page.drawLine({ start: { x: ctx.margin, y: yTop }, end: { x: ctx.margin + total, y: yTop }, thickness: 0.8, color: C.border });
+      ctx.page.drawLine({ start: { x: ctx.margin, y: yBot }, end: { x: ctx.margin + total, y: yBot }, thickness: 0.8, color: C.border });
+    } else if (isFoot) {
+      ctx.page.drawRectangle({ x: ctx.margin, y: yBot, width: total, height: rowH, color: rgb(0.973, 0.98, 0.988) });
+      ctx.page.drawLine({ start: { x: ctx.margin, y: yTop }, end: { x: ctx.margin + total, y: yTop }, thickness: 1.2, color: C.text });
+    } else {
+      ctx.page.drawLine({ start: { x: ctx.margin, y: yBot }, end: { x: ctx.margin + total, y: yBot }, thickness: 0.6, color: C.rule });
     }
     let x = ctx.margin;
     lines.forEach((cellLines, i) => {
       const cw = widths[i];
-      ctx.page.drawRectangle({ x, y: yBot, width: cw, height: rowH, borderColor: C.border, borderWidth: 0.5 });
+      const raw = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
+      const colorSpec = colColors[i];
+      const cellColor = isHeader ? C.slate
+        : typeof colorSpec === "function" ? (colorSpec(raw) || C.text) : (colorSpec || C.text);
       cellLines.forEach((label, li) => {
-        const isBold = isHeader || boldCols.includes(i);
+        const isBold = isHeader || isFoot || boldCols.includes(i);
         const tw = widthOf(ctx, label, fontSize, isBold);
-        const tx = rightCols.includes(i) && !isHeader ? x + cw - pad - tw : x + pad;
+        const tx = rightCols.includes(i) ? x + cw - pad - tw : x + pad;
         const ty = wrap
           ? yTop - 4 - fontSize - li * lineH + 1.5
           : yBot + (rowH - fontSize) / 2 + 1.5;
         ctx.page.drawText(label, {
-          x: tx, y: ty, size: fontSize,
+          x: tx, y: ty,
           font: isBold ? ctx.bold : ctx.font,
-          color: isHeader ? C.white : (colColors[i] || C.text),
+          size: isHeader ? fontSize - 0.5 : fontSize,
+          color: cellColor,
         });
       });
       x += cw;
@@ -225,7 +291,8 @@ export function drawTable(ctx, header, rows, {
   ensure(ctx, baseH * 2);
   drawRow(header, { isHeader: true });
   const data = rows.length ? rows : [header.map(() => "-")];
-  data.forEach((r, idx) => drawRow(r, { zebra: idx % 2 === 1 }));
+  data.forEach((r) => drawRow(r));
+  if (footRow) drawRow(footRow, { isFoot: true });
   ctx.y -= 10;
 }
 
@@ -407,5 +474,15 @@ export function compositionBar(ctx, { title, items, formatValue }) {
 }
 
 export async function finish(ctx) {
+  // Nomor halaman di kanan bawah setiap halaman.
+  const pages = ctx.pdf.getPages();
+  pages.forEach((pg, i) => {
+    const { width: w } = pg.getSize();
+    const y = ctx.margin - 4;
+    pg.drawLine({ start: { x: ctx.margin, y: y + 12 }, end: { x: w - ctx.margin, y: y + 12 }, thickness: 0.6, color: C.border });
+    const label = `Halaman ${i + 1} dari ${pages.length}`;
+    const tw = ctx.font.widthOfTextAtSize(label, 7.5);
+    pg.drawText(label, { x: w - ctx.margin - tw, y, size: 7.5, font: ctx.font, color: C.muted });
+  });
   return await ctx.pdf.save();
 }

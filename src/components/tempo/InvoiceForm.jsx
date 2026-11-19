@@ -21,7 +21,7 @@ import { formatNumberInput, parseNumberInput, todayISO } from "@/lib/tempoFormat
 const empty = {
   client_name: "", top: "Cash", po_date: "", po_number: "",
   delivery_note_number: "", invoice_number: "", invoice_date: todayISO(),
-  total_amount: 0, due_date: "", status: "belum_lunas", installments: [],
+  total_amount: 0, due_date: "", status: "belum_lunas", paid_date: "", installments: [],
 };
 
 const Field = ({ label, children }) => (
@@ -202,9 +202,16 @@ export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = 
                 <div className="text-sm font-semibold">{form.status === "lunas" ? "Lunas" : "Belum Lunas"}</div>
               </div>
               <Switch data-testid="form-status-switch" checked={form.status === "lunas"}
-                onCheckedChange={(v) => set("status", v ? "lunas" : "belum_lunas")} />
+                onCheckedChange={(v) => setForm((f) => ({ ...f, status: v ? "lunas" : "belum_lunas", paid_date: v ? (f.paid_date || todayISO()) : "" }))} />
             </div>
           </div>
+
+          {form.status === "lunas" && form.top !== "Cicilan" && (
+            <Field label="Tanggal Lunas (untuk hitung keterlambatan)">
+              <Input type="date" data-testid="form-paid-date" value={form.paid_date || ""}
+                onChange={(e) => set("paid_date", e.target.value)} />
+            </Field>
+          )}
         </div>
 
         {form.top === "Cicilan" && (

@@ -1,6 +1,7 @@
 import { handle, pdfResponse, qp, HttpError } from "@/server/http";
 import { getCurrentUser } from "@/server/auth";
 import { computeStock, mutationsOf } from "@/server/reports";
+import { stockByItem } from "@/server/mutations";
 import { formatDateSlash } from "@/server/format";
 import { paperMutationsPdf, inkMutationsPdf, otherMutationsPdf, stockSummaryPdf } from "@/server/pdf/builders";
 
@@ -20,7 +21,8 @@ const MUTATION_KINDS = {
 
 export const GET = handle(async (req, { params }) => {
   const { kind } = await params;
-  await getCurrentUser(req);
+  const current = await getCurrentUser(req);
+  const printedBy = current?.name || current?.username || "";
   const start = qp(req, "start");
   const end = qp(req, "end");
 
@@ -30,13 +32,15 @@ export const GET = handle(async (req, { params }) => {
     const itemId = qp(req, "item_id");
     if (itemId) rows = rows.filter((m) => m.item_id === itemId);
     rows.sort((a, b) => `${a.date} ${a.time || ""} ${a.created_at || ""}`.localeCompare(`${b.date} ${b.time || ""} ${b.created_at || ""}`));
-    return pdfResponse(await cfg.builder(rows, periodLabel(start, end)), cfg.file);
+    const stock = await stockByItem(cfg.type);
+    const stockById = Object.fromEntries(Object.entries(stock).map(([k, v]) => [k, v.stock]));
+    return pdfResponse(await cfg.builder(rows, periodLabel(start, end), { printedBy, stockById }), cfg.file);
   }
 
   if (kind === "stock-ringkas") {
     const stock = await computeStock();
     const now = new Date().toISOString().slice(0, 10);
-    return pdfResponse(await stockSummaryPdf(stock, `Per ${formatDateSlash(now)}`), "laporan-stok.pdf");
+    return pdfResponse(await stockSummaryPdf(stock, formatDateSlash(now), { printedBy }), "laporan-stok-akhir.pdf");
   }
 
   throw new HttpError(404, "Jenis laporan PDF tidak dikenal");

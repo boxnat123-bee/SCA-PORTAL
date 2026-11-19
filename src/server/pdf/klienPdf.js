@@ -43,7 +43,7 @@ export async function buildKlienStockPdf({ summary, kliens, statusFilter }) {
     statusFilter && statusFilter !== "semua"
       ? `Status item: ${statusFilter === "aktif" ? "Aktif" : "Selesai/Ditutup"}`
       : "Semua status item";
-  docHeader(ctx, "LAPORAN STOK KLIEN SCA", label);
+  docHeader(ctx, "Laporan Stok Klien", label);
   summaryLine(ctx, summary);
 
   const rows = [];
@@ -83,7 +83,7 @@ export async function buildKlienStockPdf({ summary, kliens, statusFilter }) {
 /** Riwayat mutasi stok klien (sudah terfilter di route). */
 export async function buildKlienHistoryPdf({ mutations, periodLabel }) {
   const ctx = await createDoc({ landscape: true });
-  docHeader(ctx, "RIWAYAT MUTASI STOK KLIEN", periodLabel || "Semua periode");
+  docHeader(ctx, "Riwayat Mutasi Stok Klien", periodLabel || "Semua periode");
 
   const masuk = (mutations || []).filter((m) => m.jenis === "masuk").length;
   const keluar = (mutations || []).filter((m) => m.jenis === "keluar").length;

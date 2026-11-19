@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 const d = (v) => (v ? String(v).slice(0, 10).split("-").reverse().join("/") : null);
 
 export const GET = handle(async (req) => {
-  await requireSuperadmin(req);
+  const current = await requireSuperadmin(req);
+  const printedBy = current?.name || current?.username || "";
   const kind = qp(req, "kind") || "all";
   const stamp = new Date().toISOString().slice(0, 10);
 
@@ -25,7 +26,7 @@ export const GET = handle(async (req) => {
       sort_by: qp(req, "sort_by") || "due_date",
       order: qp(req, "order") || "asc",
     });
-    const bytes = await buildInvoicesPdf({ invoices, periodLabel: "Seluruh data invoice" });
+    const bytes = await buildInvoicesPdf({ invoices, periodLabel: "Seluruh data invoice", printedBy });
     return pdfResponse(bytes, `Jatuh_Tempo_Klien_${stamp}.pdf`);
   }
 

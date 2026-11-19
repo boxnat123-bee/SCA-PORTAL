@@ -60,6 +60,8 @@ export function buildInvoicePayload(body, existing = null) {
     total_amount: num(body?.total_amount),
     due_date: body?.due_date || null,
     status,
+    // Tanggal pelunasan (non-cicilan) — dipakai untuk menghitung keterlambatan bayar.
+    paid_date: status === "lunas" ? (body?.paid_date || null) : null,
     installments: normalizeInstallments(body?.installments),
     updated_at: nowIso(),
   };

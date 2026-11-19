@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import MoneyInput, { INPUT_CLS } from "@/components/MoneyInput";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -66,12 +67,13 @@ function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
     jenis_kertas: "", gramatur: "", panjang: "", lebar: "", satuan: type === "paper" ? "Rim" : "", jenis_tinta: "", nama_barang: "",
     jumlah: "", supplier: "", nama_cetakan: "", date: "", time: "", keterangan: "",
     harga_mode: "per_satuan", harga: "", harga_label: "", ppn_ada: false, ppn_nominal: "",
+    item_keterangan: "",
   };
   const [f, setF] = useState(blank);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!open) return;
-    if (item) setF({ ...blank, ...item, harga: item.harga ?? "", ppn_nominal: item.ppn_nominal || "", ppn_ada: !!item.ppn_ada });
+    if (item) setF({ ...blank, ...item, harga: item.harga ?? "", ppn_nominal: item.ppn_nominal || "", ppn_ada: !!item.ppn_ada, item_keterangan: item.keterangan || "", keterangan: "" });
     else setF({ ...blank, date: todayStr(), time: nowTime() });
     // eslint-disable-next-line
   }, [open, item]);
@@ -125,6 +127,11 @@ function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
             </div>
           )}
 
+          <div className="space-y-1.5">
+            <Label>Keterangan item <span className="text-muted-foreground">(opsional, tampil di Laporan Stok Akhir)</span></Label>
+            <Input value={f.item_keterangan} onChange={set("item_keterangan")} placeholder="cth: simpan di rak B, khusus klien X" data-testid="item-keterangan" />
+          </div>
+
           {!item && (
             <div className="grid gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.04] p-3">
               <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400"><ArrowDownToLine className="h-4 w-4" /> Stok masuk pertama</div>
@@ -155,13 +162,13 @@ function ItemDialog({ type, open, onOpenChange, item, onSaved }) {
               {f.harga_mode === "custom" && (
                 <div className="space-y-1.5"><Label>Harga per…</Label><Input value={f.harga_label} onChange={set("harga_label")} placeholder="cth: per lembar" /></div>
               )}
-              <div className="space-y-1.5"><Label>Harga (Rp)</Label><Input type="number" inputMode="decimal" value={f.harga} onChange={set("harga")} placeholder="Boleh dikosongkan" /></div>
+              <div className="space-y-1.5"><Label>Harga (Rp)</Label><MoneyInput className={INPUT_CLS} value={f.harga} onChange={(v) => setF((p) => ({ ...p, harga: v }))} placeholder="Boleh dikosongkan" data-testid="item-harga" /></div>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" className="h-4 w-4 accent-primary" checked={!!f.ppn_ada} onChange={set("ppn_ada")} /> Ada PPN
             </label>
             {f.ppn_ada && (
-              <div className="space-y-1.5"><Label>Nominal PPN (Rp)</Label><Input type="number" inputMode="decimal" value={f.ppn_nominal} onChange={set("ppn_nominal")} /></div>
+              <div className="space-y-1.5"><Label>Nominal PPN (Rp)</Label><MoneyInput className={INPUT_CLS} value={f.ppn_nominal} onChange={(v) => setF((p) => ({ ...p, ppn_nominal: v }))} data-testid="item-ppn" /></div>
             )}
           </div>
         </div>
@@ -262,6 +269,7 @@ function DetailDialog({ type, item, onClose, onEdit, onDelete, version }) {
             Stok sekarang <b>{formatNumber(it?.stock, 2)} {it?.satuan}</b> · {muts.length} mutasi.
             Item dibuat oleh {it?.created_by_name || "-"} ({fmtDateTime(it?.created_at)}).
             {priceText(it) && <> Harga: <b>{priceText(it)}</b>.</>}
+            {it?.keterangan && <> Keterangan: <i>{it.keterangan}</i>.</>}
           </DialogDescription>
         </DialogHeader>
         {isLoading ? <TableSkeleton columns={4} rows={4} /> : muts.length === 0 ? (
@@ -431,6 +439,7 @@ export default function MutationsPage({ type }) {
                     <TableCell>
                       <div className="font-medium">{it.label}</div>
                       {priceText(it) && <div className="text-[11px] text-muted-foreground">{priceText(it)}</div>}
+                      {it.keterangan && <div className="text-[11px] italic text-muted-foreground">{it.keterangan}</div>}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{it.satuan}</TableCell>
                     <TableCell className={`whitespace-nowrap text-right font-semibold [font-variant-numeric:tabular-nums] ${Number(it.stock) <= 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>

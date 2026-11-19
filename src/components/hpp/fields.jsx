@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatGroup, formatRp } from "@/lib/format";
+import MoneyInput from "@/components/MoneyInput";
 
 export const SectionTitle = ({ title, hint }) => (
   <div className="mb-5">
@@ -41,6 +42,11 @@ export const NumberInput = ({ value, onChange, placeholder, testid }) => {
     />
   );
 };
+
+/** Input nominal Rupiah: titik ribuan otomatis saat mengetik. */
+export const MoneyField = ({ value, onChange, placeholder, testid }) => (
+  <MoneyInput data-testid={testid} className={inputCls} value={value ?? ""} placeholder={placeholder || "0"} onChange={onChange} />
+);
 
 export const TextInput = ({ value, onChange, placeholder, testid }) => (
   <input

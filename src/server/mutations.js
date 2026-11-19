@@ -40,16 +40,16 @@ export function buildItem(type, data) {
     if (!(gramatur > 0) || !(panjang > 0) || !(lebar > 0)) {
       throw new HttpError(400, "Gramatur, panjang, dan lebar wajib diisi");
     }
-    return { jenis_kertas: jenis, gramatur, panjang, lebar, satuan: str(data.satuan) || "Rim" };
+    return { jenis_kertas: jenis, gramatur, panjang, lebar, satuan: str(data.satuan) || "Rim", keterangan: str(data.item_keterangan ?? data.keterangan_item) };
   }
   if (type === "ink") {
     const jenis = str(data.jenis_tinta);
     if (!jenis) throw new HttpError(400, "Jenis tinta wajib diisi");
-    return { jenis_tinta: jenis, satuan: "Kg" };
+    return { jenis_tinta: jenis, satuan: "Kg", keterangan: str(data.item_keterangan ?? data.keterangan_item) };
   }
   const nama = str(data.nama_barang);
   if (!nama) throw new HttpError(400, "Nama barang wajib diisi");
-  return { nama_barang: nama, satuan: str(data.satuan) || "unit" };
+  return { nama_barang: nama, satuan: str(data.satuan) || "unit", keterangan: str(data.item_keterangan ?? data.keterangan_item) };
 }
 
 /** Harga (opsional) — mode: per_satuan | per_kg (kertas) | total | custom. PPN nominal Rp (opsional). */

@@ -2,7 +2,7 @@ import {
   FileStack, Palette, Printer, PenTool, Layers, Sparkles,
   Scissors, Droplets, SquareStack, Grid3x3, Truck, Ruler, LayoutDashboard, Plus, Trash2,
 } from "lucide-react";
-import { Field, NumberInput, TextInput, SelectInput, SectionTitle, ResultLine, OutputCard } from "@/components/hpp/fields";
+import { Field, NumberInput, MoneyField, TextInput, SelectInput, SectionTitle, ResultLine, OutputCard } from "@/components/hpp/fields";
 import { formatGroup, formatRp } from "@/lib/format";
 import {
   paperJenisList, paperGramaturList, paperUkuranList, findPaper, PAPER_METODE,
@@ -86,7 +86,7 @@ const Kertas = ({ s, u, r }) => {
         {anyManual && (
           <>
             <Field label="Harga per Kg" unit="Rp" testid="field-kertas-hargakg">
-              <NumberInput testid="input-kertas-hargakg" value={s.customHargaKg} onChange={(v) => u("customHargaKg", v)} />
+              <MoneyField testid="input-kertas-hargakg" value={s.customHargaKg} onChange={(v) => u("customHargaKg", v)} />
             </Field>
             <Field label="Pembagi" testid="field-kertas-pembagi">
               <NumberInput testid="input-kertas-pembagi" value={s.customPembagi} onChange={(v) => u("customPembagi", v)} />
@@ -164,7 +164,7 @@ const Warna = ({ s, u, r }) => {
                 <NumberInput testid={`input-warna-kg-${i}`} value={t.kg} onChange={(v) => setTinta(i, "kg", v)} />
               </Field>
               <Field label="Harga / Kg" unit="Rp" testid={`field-warna-harga-${i}`}>
-                <NumberInput testid={`input-warna-harga-${i}`} value={t.harga} onChange={(v) => setTinta(i, "harga", v)} />
+                <MoneyField testid={`input-warna-harga-${i}`} value={t.harga} onChange={(v) => setTinta(i, "harga", v)} />
               </Field>
             </div>
             <div className="mt-2 text-right text-xs text-muted-foreground">
@@ -176,8 +176,8 @@ const Warna = ({ s, u, r }) => {
 
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-8 mb-3">Listrik, Operator & Quantity</p>
       <Grid>
-        <Field label="Biaya Listrik" unit="Rp" testid="field-warna-listrik"><NumberInput testid="input-warna-listrik" value={s.listrik} onChange={(v) => u("listrik", v)} /></Field>
-        <Field label="Gaji Operator" unit="Rp" testid="field-warna-gaji"><NumberInput testid="input-warna-gaji" value={s.gaji} onChange={(v) => u("gaji", v)} /></Field>
+        <Field label="Biaya Listrik" unit="Rp" testid="field-warna-listrik"><MoneyField testid="input-warna-listrik" value={s.listrik} onChange={(v) => u("listrik", v)} /></Field>
+        <Field label="Gaji Operator" unit="Rp" testid="field-warna-gaji"><MoneyField testid="input-warna-gaji" value={s.gaji} onChange={(v) => u("gaji", v)} /></Field>
         <Field label="Nama Operator (opsional)" testid="field-warna-operator"><TextInput testid="input-warna-operator" value={s.operator} onChange={(v) => u("operator", v)} placeholder="Tulis nama operator..." /></Field>
         <Field label="Quantity Order" unit="Pcs" testid="field-warna-qty"><NumberInput testid="input-warna-qty" value={s.qtyOrder} onChange={(v) => u("qtyOrder", v)} /></Field>
       </Grid>
@@ -231,8 +231,8 @@ const OngkosCetak = ({ s, u, r }) => (
         </div>
       </Field>
       <Field label="Minimal Lembar Cetak" unit="Lbr" testid="field-oc-minlembar"><NumberInput testid="input-oc-minlembar" value={s.minLembar} onChange={(v) => u("minLembar", v)} /></Field>
-      <Field label="Harga Ongkos Cetak (minimum)" unit="Rp" testid="field-oc-harga"><NumberInput testid="input-oc-harga" value={s.hargaOngkos} onChange={(v) => u("hargaOngkos", v)} /></Field>
-      <Field label="Harga Setelah Min / Warna" unit="Rp" testid="field-oc-hargamin"><NumberInput testid="input-oc-hargamin" value={s.hargaSetelahMin} onChange={(v) => u("hargaSetelahMin", v)} /></Field>
+      <Field label="Harga Ongkos Cetak (minimum)" unit="Rp" testid="field-oc-harga"><MoneyField testid="input-oc-harga" value={s.hargaOngkos} onChange={(v) => u("hargaOngkos", v)} /></Field>
+      <Field label="Harga Setelah Min / Warna" unit="Rp" testid="field-oc-hargamin"><MoneyField testid="input-oc-hargamin" value={s.hargaSetelahMin} onChange={(v) => u("hargaSetelahMin", v)} /></Field>
     </Grid>
     <Box>
       <ResultLine label="Quantity Lembar Cetak" value={r.qtyLembarCetak} money={false} />
@@ -250,7 +250,7 @@ const Design = ({ s, u, r }) => (
     <SectionTitle title="Design" hint="Jasa design dibagi jumlah order." />
     <Grid>
       <Field label="Nama Designer" testid="field-design-nama"><TextInput testid="input-design-nama" value={s.nama} onChange={(v) => u("nama", v)} placeholder="opsional" /></Field>
-      <Field label="Jasa Design" unit="Rp" testid="field-design-jasa"><NumberInput testid="input-design-jasa" value={s.jasaDesign} onChange={(v) => u("jasaDesign", v)} /></Field>
+      <Field label="Jasa Design" unit="Rp" testid="field-design-jasa"><MoneyField testid="input-design-jasa" value={s.jasaDesign} onChange={(v) => u("jasaDesign", v)} /></Field>
       <Field label="Quantity Order" unit="Pcs" testid="field-design-qty"><NumberInput testid="input-design-qty" value={s.qtyOrder} onChange={(v) => u("qtyOrder", v)} /></Field>
     </Grid>
     <div className="mt-6"><OutputCard label="Harga Design / Pcs" value={r.output} /></div>
@@ -276,7 +276,7 @@ const CTP = ({ s, u, r }) => (
           <NumberInput testid="input-ctp-ukuranl" value={s.ukuranL} onChange={(v) => u("ukuranL", v)} />
         </div>
       </Field>
-      <Field label="Biaya CTP / Lembar" unit="Rp" testid="field-ctp-biaya"><NumberInput testid="input-ctp-biaya" value={s.biayaCTP} onChange={(v) => u("biayaCTP", v)} /></Field>
+      <Field label="Biaya CTP / Lembar" unit="Rp" testid="field-ctp-biaya"><MoneyField testid="input-ctp-biaya" value={s.biayaCTP} onChange={(v) => u("biayaCTP", v)} /></Field>
       <Field label="Quantity Warna" unit="Warna" testid="field-ctp-warna"><NumberInput testid="input-ctp-warna" value={s.qtyWarna} onChange={(v) => u("qtyWarna", v)} /></Field>
       <Field label="Quantity Order" unit="Pcs" testid="field-ctp-qty"><NumberInput testid="input-ctp-qty" value={s.qtyOrder} onChange={(v) => u("qtyOrder", v)} /></Field>
     </Grid>
@@ -303,7 +303,7 @@ const Finishing = ({ s, u, r }) => (
           <NumberInput testid="input-fin-ukuranl" value={s.ukuranL} onChange={(v) => u("ukuranL", v)} />
         </div>
       </Field>
-      <Field label="Harga per Cm" unit="Rp" testid="field-fin-harga"><NumberInput testid="input-fin-harga" value={s.hargaPerCm} onChange={(v) => u("hargaPerCm", v)} /></Field>
+      <Field label="Harga per Cm" unit="Rp" testid="field-fin-harga"><MoneyField testid="input-fin-harga" value={s.hargaPerCm} onChange={(v) => u("hargaPerCm", v)} /></Field>
       <Field label="Quantity / Lembar" unit="Pcs" testid="field-fin-perlembar"><NumberInput testid="input-fin-perlembar" value={s.qtyPerLembar} onChange={(v) => u("qtyPerLembar", v)} /></Field>
     </Grid>
     <div className="mt-6"><OutputCard label="Harga Finishing / Pcs" value={r.output} /></div>
@@ -328,7 +328,7 @@ const Laminasi = ({ s, u, r }) => (
           <NumberInput testid="input-lam-ukuranl" value={s.ukuranL} onChange={(v) => u("ukuranL", v)} />
         </div>
       </Field>
-      <Field label="Harga Index Flute" unit="Rp" testid="field-lam-index"><NumberInput testid="input-lam-index" value={s.hargaIndex} onChange={(v) => u("hargaIndex", v)} /></Field>
+      <Field label="Harga Index Flute" unit="Rp" testid="field-lam-index"><MoneyField testid="input-lam-index" value={s.hargaIndex} onChange={(v) => u("hargaIndex", v)} /></Field>
       <Field label="1 Lembar jadi berapa Pcs" unit="Pcs" testid="field-lam-perpcs"><NumberInput testid="input-lam-perpcs" value={s.perPcs} onChange={(v) => u("perPcs", v)} /></Field>
       <Field label="Waste %" unit="(0.05 = 5%)" testid="field-lam-wes"><NumberInput testid="input-lam-wes" value={s.wes} onChange={(v) => u("wes", v)} /></Field>
     </Grid>
@@ -359,7 +359,7 @@ const Lem = ({ s, u, r }) => (
           <NumberInput testid="input-lem-spotl" value={s.spotL} onChange={(v) => u("spotL", v)} />
         </div>
       </Field>
-      <Field label="Biaya / Cm" unit="Rp" testid="field-lem-biaya"><NumberInput testid="input-lem-biaya" value={s.biaya} onChange={(v) => u("biaya", v)} /></Field>
+      <Field label="Biaya / Cm" unit="Rp" testid="field-lem-biaya"><MoneyField testid="input-lem-biaya" value={s.biaya} onChange={(v) => u("biaya", v)} /></Field>
       <Field label="Waste %" unit="(0.06 = 6%)" testid="field-lem-wes"><NumberInput testid="input-lem-wes" value={s.wes} onChange={(v) => u("wes", v)} /></Field>
     </Grid>
     <div className="mt-6"><OutputCard label="Harga Lem / Pcs" value={r.output} /></div>
@@ -371,14 +371,14 @@ const PisauPapan = ({ s, u, r }) => (
     <SectionTitle title="Pisau & Papan Plong" hint="Biaya pisau plong dan papan plong (dua komponen terpisah di Total HPP)." />
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Pisau Plong</p>
     <Grid>
-      <Field label="Biaya / Cm" unit="Rp" testid="field-pisau-biaya"><NumberInput testid="input-pisau-biaya" value={s.pisauBiaya} onChange={(v) => u("pisauBiaya", v)} /></Field>
+      <Field label="Biaya / Cm" unit="Rp" testid="field-pisau-biaya"><MoneyField testid="input-pisau-biaya" value={s.pisauBiaya} onChange={(v) => u("pisauBiaya", v)} /></Field>
       <Field label="Ukuran Kemasan /pcs" unit="Cm" testid="field-pisau-ukuran"><NumberInput testid="input-pisau-ukuran" value={s.pisauUkuran} onChange={(v) => u("pisauUkuran", v)} /></Field>
       <Field label="Quantity / Lembar" testid="field-pisau-qlembar"><NumberInput testid="input-pisau-qlembar" value={s.pisauQtyLembar} onChange={(v) => u("pisauQtyLembar", v)} /></Field>
       <Field label="Quantity Order" unit="Pcs" testid="field-pisau-qorder"><NumberInput testid="input-pisau-qorder" value={s.pisauQtyOrder} onChange={(v) => u("pisauQtyOrder", v)} /></Field>
     </Grid>
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-8 mb-3">Papan Plong</p>
     <Grid>
-      <Field label="Biaya / Cm" unit="Rp" testid="field-papan-biaya"><NumberInput testid="input-papan-biaya" value={s.papanBiaya} onChange={(v) => u("papanBiaya", v)} /></Field>
+      <Field label="Biaya / Cm" unit="Rp" testid="field-papan-biaya"><MoneyField testid="input-papan-biaya" value={s.papanBiaya} onChange={(v) => u("papanBiaya", v)} /></Field>
       <Field label="Ukuran Lembar (Cm)" unit="P x L" testid="field-papan-lembar">
         <div className="flex gap-2">
           <NumberInput testid="input-papan-lembarp" value={s.papanLembarP} onChange={(v) => u("papanLembarP", v)} />
@@ -409,7 +409,7 @@ const Plong = ({ s, u, r }) => (
       </Field>
       <Field label="Sistem Kerja" testid="field-plong-sistem"><TextInput testid="input-plong-sistem" value={s.sistem} onChange={(v) => u("sistem", v)} /></Field>
       <Field label="Jenis Laminasi" testid="field-plong-lam"><TextInput testid="input-plong-lam" value={s.jenisLaminasi} onChange={(v) => u("jenisLaminasi", v)} /></Field>
-      <Field label="Biaya / Lembar" unit="Rp" testid="field-plong-biaya"><NumberInput testid="input-plong-biaya" value={s.biayaLbr} onChange={(v) => u("biayaLbr", v)} /></Field>
+      <Field label="Biaya / Lembar" unit="Rp" testid="field-plong-biaya"><MoneyField testid="input-plong-biaya" value={s.biayaLbr} onChange={(v) => u("biayaLbr", v)} /></Field>
       <Field label="Quantity / Lembar" unit="Pcs" testid="field-plong-perlembar"><NumberInput testid="input-plong-perlembar" value={s.qtyPerLembar} onChange={(v) => u("qtyPerLembar", v)} /></Field>
     </Grid>
     <div className="mt-6"><OutputCard label="Harga Plong / Pcs" value={r.output} /></div>
@@ -428,8 +428,8 @@ const OngkosPlong = ({ s, u, r }) => (
         </div>
       </Field>
       <Field label="Minimum Lembar Plong" unit="Lbr" testid="field-op-min"><NumberInput testid="input-op-min" value={s.minLembarPlong} onChange={(v) => u("minLembarPlong", v)} /></Field>
-      <Field label="Biaya Minimum" unit="Rp" testid="field-op-biayamin"><NumberInput testid="input-op-biayamin" value={s.biayaMinimum} onChange={(v) => u("biayaMinimum", v)} /></Field>
-      <Field label="Biaya Setelah Minimum / Lbr" unit="Rp" testid="field-op-biayasetelah"><NumberInput testid="input-op-biayasetelah" value={s.biayaSetelahMin} onChange={(v) => u("biayaSetelahMin", v)} /></Field>
+      <Field label="Biaya Minimum" unit="Rp" testid="field-op-biayamin"><MoneyField testid="input-op-biayamin" value={s.biayaMinimum} onChange={(v) => u("biayaMinimum", v)} /></Field>
+      <Field label="Biaya Setelah Minimum / Lbr" unit="Rp" testid="field-op-biayasetelah"><MoneyField testid="input-op-biayasetelah" value={s.biayaSetelahMin} onChange={(v) => u("biayaSetelahMin", v)} /></Field>
     </Grid>
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-8 mb-3">Order</p>
     <Grid>
@@ -459,28 +459,28 @@ const Other = ({ s, u, r }) => (
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Transportasi</p>
     <Grid>
       <Field label="Lokasi Pengiriman" testid="field-oth-lokasi"><TextInput testid="input-oth-lokasi" value={s.lokasi} onChange={(v) => u("lokasi", v)} /></Field>
-      <Field label="Biaya Transpor" unit="Rp" testid="field-oth-transpor"><NumberInput testid="input-oth-transpor" value={s.biayaTranspor} onChange={(v) => u("biayaTranspor", v)} /></Field>
+      <Field label="Biaya Transpor" unit="Rp" testid="field-oth-transpor"><MoneyField testid="input-oth-transpor" value={s.biayaTranspor} onChange={(v) => u("biayaTranspor", v)} /></Field>
       <Field label="Quantity Order" unit="Pcs" testid="field-oth-qtyt"><NumberInput testid="input-oth-qtyt" value={s.qtyOrderT} onChange={(v) => u("qtyOrderT", v)} /></Field>
     </Grid>
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-7 mb-3">Packing / Admin / QC</p>
     <Grid>
-      <Field label="Biaya Paking" unit="Rp" testid="field-oth-paking"><NumberInput testid="input-oth-paking" value={s.biayaPaking} onChange={(v) => u("biayaPaking", v)} /></Field>
+      <Field label="Biaya Paking" unit="Rp" testid="field-oth-paking"><MoneyField testid="input-oth-paking" value={s.biayaPaking} onChange={(v) => u("biayaPaking", v)} /></Field>
       <Field label="Q Pcs Hasil / Hari" unit="Pcs" testid="field-oth-hari"><NumberInput testid="input-oth-hari" value={s.qtyHari} onChange={(v) => u("qtyHari", v)} /></Field>
     </Grid>
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-7 mb-3">Potong Bahan</p>
     <Grid>
-      <Field label="Biaya Potong / Rim" unit="Rp" testid="field-oth-potongrim"><NumberInput testid="input-oth-potongrim" value={s.biayaPotongRim} onChange={(v) => u("biayaPotongRim", v)} /></Field>
+      <Field label="Biaya Potong / Rim" unit="Rp" testid="field-oth-potongrim"><MoneyField testid="input-oth-potongrim" value={s.biayaPotongRim} onChange={(v) => u("biayaPotongRim", v)} /></Field>
       <Field label="Q Lembar Plano" unit="Lbr" testid="field-oth-planopotong"><NumberInput testid="input-oth-planopotong" value={s.qtyLembarPlano} onChange={(v) => u("qtyLembarPlano", v)} /></Field>
       <Field label="Quantity Order" unit="Pcs" testid="field-oth-qtyp"><NumberInput testid="input-oth-qtyp" value={s.qtyOrderP} onChange={(v) => u("qtyOrderP", v)} /></Field>
     </Grid>
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-7 mb-3">Kopek & Plong</p>
     <Grid>
-      <Field label="Biaya Kopek & Plong / Lbr" unit="Rp" testid="field-oth-kopek"><NumberInput testid="input-oth-kopek" value={s.biayaKopekLbr} onChange={(v) => u("biayaKopekLbr", v)} /></Field>
+      <Field label="Biaya Kopek & Plong / Lbr" unit="Rp" testid="field-oth-kopek"><MoneyField testid="input-oth-kopek" value={s.biayaKopekLbr} onChange={(v) => u("biayaKopekLbr", v)} /></Field>
       <Field label="Q Pcs / Lbr" unit="Pcs" testid="field-oth-pcslbr"><NumberInput testid="input-oth-pcslbr" value={s.qtyPcsLbr} onChange={(v) => u("qtyPcsLbr", v)} /></Field>
     </Grid>
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mt-7 mb-3">Potong Rajang / Struk Cetakan</p>
     <Grid>
-      <Field label="Biaya Rajang / Rim" unit="Rp" testid="field-oth-rajangrim"><NumberInput testid="input-oth-rajangrim" value={s.biayaRajangRim} onChange={(v) => u("biayaRajangRim", v)} /></Field>
+      <Field label="Biaya Rajang / Rim" unit="Rp" testid="field-oth-rajangrim"><MoneyField testid="input-oth-rajangrim" value={s.biayaRajangRim} onChange={(v) => u("biayaRajangRim", v)} /></Field>
       <Field label="Q Lembar Kertas" unit="Lbr" testid="field-oth-planorajang"><NumberInput testid="input-oth-planorajang" value={s.qtyLembarRajang} onChange={(v) => u("qtyLembarRajang", v)} /></Field>
       <Field label="Quantity Order" unit="Pcs" testid="field-oth-qtyr"><NumberInput testid="input-oth-qtyr" value={s.qtyOrderR} onChange={(v) => u("qtyOrderR", v)} /></Field>
     </Grid>
