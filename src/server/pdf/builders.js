@@ -1,5 +1,5 @@
 import {
-  createDoc, docHeader, section, drawTable, groupTitle, summaryCards, finish, ensure, text, C,
+  createDoc, docHeader, section, drawTable, groupTitle, summaryCards, finish, ensure, C,
 } from "@/server/pdf/core";
 import { formatNum, formatDateSlash } from "@/server/format";
 import { priceText } from "@/lib/price";
@@ -116,7 +116,7 @@ export async function stockSummaryPdf(stock, periodLabel, { printedBy = "" } = {
     { label: "Barang lain", value: `${other.length} item` },
   ]);
   const rowsOf = (list, nameFn) => list.map((x) => [
-    nameFn(x), priceText(x, " - ") || "-", (x.suppliers || []).join(", ") || "-", formatNum(x.stock), x.satuan || "-", dash(x.keterangan),
+    nameFn(x), priceText(x) || "-", (x.suppliers || []).join(", ") || "-", formatNum(x.stock), x.satuan || "-", dash(x.keterangan),
   ]);
   const hdr = (first) => [first, "Harga", "Supplier", "Stok Akhir", "Satuan", "Keterangan"];
   const opt = {
@@ -134,9 +134,7 @@ export async function stockSummaryPdf(stock, periodLabel, { printedBy = "" } = {
 
   // Kolom tanda tangan
   ensure(ctx, 120);
-  ctx.y -= 12;
-  text(ctx, "Angka merah = stok habis. Supplier diambil dari seluruh mutasi masuk item.", { size: 7.5, color: C.muted });
-  ctx.y -= 22;
+  ctx.y -= 34;
   const right = ctx.size[0] - ctx.margin;
   const boxW = 120, gap = 30;
   [["Dibuat oleh,", "Admin Gudang"], ["Diperiksa oleh,", "Pimpinan"]].forEach(([a, b], i) => {
