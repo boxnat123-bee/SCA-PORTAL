@@ -140,6 +140,7 @@ export function filterPos(list, search, bucket, month) {
       || (p.client_name || "").toLowerCase().includes(s)
       || (p.item_type || "").toLowerCase().includes(s)
       || (p.paper_size || "").toLowerCase().includes(s)
+      || (p.paper_size_plano || "").toLowerCase().includes(s)
       || (p.material || "").toLowerCase().includes(s));
   }
   if (month) out = out.filter((p) => poMonth(p) === month);

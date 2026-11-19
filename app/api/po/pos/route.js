@@ -41,6 +41,7 @@ export const POST = handle(async (req) => {
     client_name: clientName,
     item_type: String(body.item_type || ""),
     material: String(body.material || ""),
+    paper_size_plano: String(body.paper_size_plano || ""),
     paper_size: String(body.paper_size || ""),
     size_single_face: String(body.size_single_face || ""),
     size_kres_cetak: String(body.size_kres_cetak || ""),

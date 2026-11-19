@@ -21,7 +21,7 @@ export default function PoForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    po_number: "", client_name: "", item_type: "", material: "", paper_size: "",
+    po_number: "", client_name: "", item_type: "", material: "", paper_size_plano: "", paper_size: "",
     size_single_face: "", size_kres_cetak: "", size_kres_pisau: "",
     quantity: "", po_date: "", est_start: "", est_end: "", print_machine: "",
     enabled_stages: [] /* PO baru: tidak ada tahap terpilih otomatis */, notes: "",
@@ -34,7 +34,7 @@ export default function PoForm() {
       api.getPo(id).then((p) => {
         setForm({
           po_number: p.po_number, client_name: p.client_name, item_type: p.item_type || "",
-          material: p.material || "", paper_size: p.paper_size || "", quantity: p.quantity || "",
+          material: p.material || "", paper_size_plano: p.paper_size_plano || "", paper_size: p.paper_size || "", quantity: p.quantity || "",
           size_single_face: p.size_single_face || "", size_kres_cetak: p.size_kres_cetak || "",
           size_kres_pisau: p.size_kres_pisau || "",
           po_date: p.po_date || "", est_start: p.est_start || "", est_end: p.est_end || "",
@@ -103,6 +103,7 @@ export default function PoForm() {
             {field("client_name", t("clientName") + " *")}
             {field("item_type", t("itemType"))}
             {field("material", t("material"))}
+            {field("paper_size_plano", t("paperSizePlano"), "text", "cth: 65 x 100")}
             {field("paper_size", t("paperSize"), "text", "cth: 83 x 56,5")}
             {field("quantity", t("quantity"))}
             {field("size_single_face", t("sizeSingleFace"), "text", "cth: 82,3 x 55,8")}

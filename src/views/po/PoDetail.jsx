@@ -75,6 +75,7 @@ export default function PoDetail() {
       <Card className="rounded-2xl p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
         <Info label={t("itemType")} value={po.item_type} />
         <Info label={t("material")} value={po.material} />
+        <Info label={t("paperSizePlano")} value={po.paper_size_plano} />
         <Info label={t("paperSize")} value={po.paper_size} />
         <Info label={t("quantity")} value={po.quantity} />
         <Info label={t("sizeSingleFace")} value={po.size_single_face} />

@@ -43,6 +43,7 @@ export const PUT = handle(async (req, { params }) => {
     client_name: String(body.client_name || existing.client_name),
     item_type: String(body.item_type ?? existing.item_type ?? ""),
     material: String(body.material ?? existing.material ?? ""),
+    paper_size_plano: String(body.paper_size_plano ?? existing.paper_size_plano ?? ""),
     paper_size: String(body.paper_size ?? existing.paper_size ?? ""),
     size_single_face: String(body.size_single_face ?? existing.size_single_face ?? ""),
     size_kres_cetak: String(body.size_kres_cetak ?? existing.size_kres_cetak ?? ""),
