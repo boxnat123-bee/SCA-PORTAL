@@ -1,0 +1,31 @@
+# SCA Portal — produksi di VPS (tanpa Coolify).
+# app   : Next.js (Dockerfile di root repo), port 3000 hanya di jaringan internal
+# caddy : reverse proxy + HTTPS otomatis (Let's Encrypt) untuk scaportal.cloud
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: scaportal-app:latest
+    env_file: /opt/scaportal-env/app.env
+    restart: unless-stopped
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

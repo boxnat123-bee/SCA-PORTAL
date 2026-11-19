@@ -1,0 +1,14 @@
+# HTTPS otomatis. Sertifikat terbit setelah DNS scaportal.cloud mengarah ke IP VPS ini.
+scaportal.cloud {
+	encode gzip
+	reverse_proxy app:3000
+}
+
+www.scaportal.cloud {
+	redir https://scaportal.cloud{uri} permanent
+}
+
+# Akses langsung via IP (sebelum domain aktif), tanpa HTTPS
+:80 {
+	reverse_proxy app:3000
+}
