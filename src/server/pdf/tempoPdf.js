@@ -2,6 +2,7 @@
 import {
   createDoc, docHeader, section, drawTable, text, barChart, C, finish, newPage, summaryCards,
 } from "@/server/pdf/core";
+import { paidOnDate } from "@/server/tempo";
 
 const rp = (v) => "Rp " + new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number(v) || 0);
 
@@ -32,16 +33,6 @@ function daysBetween(a, b) {
   return Math.round((y - x) / 86400000);
 }
 const todayWib = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-
-/** Tanggal pelunasan: cicilan = tanggal cicilan terakhir; lainnya = Tanggal Lunas yang diisi. */
-function paidOn(inv) {
-  if (inv.status !== "lunas") return null;
-  if (inv.top === "Cicilan") {
-    const dates = (inv.installments || []).map((c) => c.date).filter(Boolean).sort();
-    return dates.length ? dates[dates.length - 1] : null;
-  }
-  return inv.paid_date || null;
-}
 
 /** Rekap seluruh invoice (dipakai juga sebagai backup wajib sebelum hapus semua). */
 export async function buildInvoicesPdf({ invoices, periodLabel, printedBy = "" }) {
@@ -102,7 +93,7 @@ export async function buildInvoicesPdf({ invoices, periodLabel, printedBy = "" }
   // ---------- Halaman akhir: klien terlambat bayar ----------
   const today = todayWib();
   const paidLate = list
-    .map((i) => ({ i, paid: paidOn(i) }))
+    .map((i) => ({ i, paid: paidOnDate(i) }))
     .filter(({ i, paid }) => i.due_date && paid && daysBetween(i.due_date, paid) > 0)
     .map(({ i, paid }) => ({ i, paid, late: daysBetween(i.due_date, paid) }))
     .sort((a, b) => b.late - a.late);

@@ -239,6 +239,16 @@ export async function computeMonthly(yearInput) {
   return { year, data };
 }
 
+/** Tanggal pelunasan: cicilan = tanggal cicilan terakhir; lainnya = Tanggal Lunas. */
+export function paidOnDate(inv) {
+  if (inv?.status !== "lunas") return null;
+  if (inv.top === "Cicilan") {
+    const dates = (inv.installments || []).map((c) => c.date).filter(Boolean).sort();
+    return dates.at(-1) || null;
+  }
+  return inv.paid_date || null;
+}
+
 export async function sortedInvoices({ search, status, sort_by = "due_date", order = "asc" } = {}) {
   const db = await getDb();
   const query = {};
@@ -259,11 +269,13 @@ export async function sortedInvoices({ search, status, sort_by = "due_date", ord
   };
   const keyfn = keyMap[sort_by] || keyMap.due_date;
   const reverse = order === "desc" ? -1 : 1;
-  // Yang sudah Lunas selalu di bawah; urutan pilihan user berlaku di dalam tiap kelompok.
+  // Belum Lunas di atas (urut sesuai pilihan user). Lunas di bawah, yang paling baru lunas paling atas.
+  const lunasKey = (d) => `${paidOnDate(d) || ""}|${d.updated_at || ""}`;
   docs.sort((a, b) => {
     const la = a.status === "lunas" ? 1 : 0;
     const lb = b.status === "lunas" ? 1 : 0;
     if (la !== lb) return la - lb;
+    if (la) return lunasKey(b).localeCompare(lunasKey(a));
     const ka = keyfn(a);
     const kb = keyfn(b);
     if (ka < kb) return -1 * reverse;
