@@ -161,8 +161,8 @@ export async function buildPoRekapPdf({ pos, month }) {
     ["Ukuran Kertas Plano", p.paper_size_plano, "Ukuran Kertas", p.paper_size],
     ["Ukuran Kres Cetak", p.size_kres_cetak, "Ukuran Single Face", p.size_single_face],
     ["Ukuran Kres Pisau Plong", p.size_kres_pisau, "Mesin Cetak", p.print_machine],
-    ["Est. Produksi", estText(p), "Tahap Saat Ini", p.computed?.current_stage_name],
-    { full: ["Dibuat Oleh", p.created_by] },
+    ["Est. Produksi", estText(p), "Deadline", fmtDate(p.deadline)],
+    ["Tahap Saat Ini", p.computed?.current_stage_name, "Dibuat Oleh", p.created_by],
     { full: ["Barang Ditunggu", waitingText(p)] },
     { full: ["Catatan", p.notes] },
   ];

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
@@ -9,6 +10,9 @@ import { formatNumber, formatRupiah } from "@/lib/format";
 import { stagePos, stageName } from "@/lib/poStages";
 import PageContainer from "@/components/layout/PageContainer";
 import MutationTrend from "@/components/MutationTrend";
+import AttentionList from "@/components/AttentionList";
+import { useNotifications } from "@/lib/notifications";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const pad = (n) => String(n).padStart(2, "0");
 const localYmd = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -50,11 +54,7 @@ function Panel({ title, action, children, className = "" }) {
   );
 }
 
-const TAG = {
-  late: "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  soon: "bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
-  later: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
-};
+const ATTN_PREVIEW = 6; // jumlah item di Beranda; selebihnya lewat "Lihat semua"
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -62,7 +62,8 @@ export default function Dashboard() {
   const today = localYmd();
 
   const { data } = useQuery({ queryKey: ["dashboard"], queryFn: async () => (await api.get("/dashboard")).data, refetchOnMount: "always" });
-  const { data: notif } = useQuery({ queryKey: ["notifications"], queryFn: async () => (await api.get("/notifications")).data });
+  const { data: notif } = useNotifications();
+  const [allOpen, setAllOpen] = useState(false);
   const { data: pos = [] } = useQuery({ queryKey: ["po", "list-home"], queryFn: () => poApi.listPos() });
   const { data: scheds = [] } = useQuery({ queryKey: ["po", "schedules-home"], queryFn: () => poApi.listSchedules() });
   const { data: invoices = [] } = useQuery({ queryKey: ["tempo", "home"], queryFn: () => getInvoices(), enabled: isSuper });
@@ -75,12 +76,9 @@ export default function Dashboard() {
   const unpaidSum = unpaid.reduce((a, i) => a + (Number(i.remaining_amount) || 0), 0);
   const overdue = unpaid.filter((i) => i.due_date && String(i.due_date).slice(0, 10) < today).length;
 
-  // Perlu perhatian: hanya proses produksi yang mendekati deadline (PO H-14 & H-7 Est. Selesai)
-  const attention = (notif?.items || []).filter((n) => n.kind === "po").map((n) => ({
-    key: n.id, tone: n.days < 0 ? "late" : n.days <= 7 ? "soon" : "later",
-    tag: n.days < 0 ? `Lewat ${-n.days} hari` : n.days === 0 ? "Hari ini" : `H-${n.days}`,
-    title: n.title, body: n.body, link: n.link,
-  })).slice(0, 8);
+  // Perlu perhatian: PO mendekati Est. Selesai / Deadline (H-14 & H-7) dan jadwal kirim H-1.
+  const attention = (notif?.items || []).filter((n) => n.kind !== "tempo");
+  const openCount = attention.filter((n) => !n.handled).length;
 
   // Produksi hari ini: jadwal tahap yang mencakup hari ini + PO yang selesai/kirim hari ini
   const todaySched = scheds.filter((s) => s.date <= today && today <= (s.end_date || s.date));
@@ -101,19 +99,15 @@ export default function Dashboard() {
       </section>
 
       <div className="grid gap-3.5 lg:grid-cols-[1.35fr_1fr]">
-        <Panel title="Perlu perhatian">
+        <Panel title={<>Perlu perhatian{openCount ? <span className="ml-2 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">{openCount}</span> : null}</>}
+          action={attention.length > 0 && (
+            <button type="button" onClick={() => setAllOpen(true)} className="text-[12.5px] font-semibold text-primary hover:underline" data-testid="attn-see-all">
+              Lihat semua{attention.length > ATTN_PREVIEW ? ` (${attention.length})` : ""}
+            </button>
+          )}>
           <div className="mt-1.5">
-            {attention.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada PO yang mendekati deadline (H-14).</p>}
-            {attention.map((a) => (
-              <div key={a.key} className="flex items-center gap-3 border-b border-border/60 py-[11px] last:border-0">
-                <span className={`whitespace-nowrap rounded-full px-2 py-[3px] text-[11px] font-semibold ${TAG[a.tone]}`}>{a.tag}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13.5px] font-semibold">{a.title}</div>
-                  <div className="truncate text-xs text-muted-foreground">{a.body}</div>
-                </div>
-                <Link to={a.link} className="text-[12.5px] font-semibold text-primary hover:underline">Buka</Link>
-              </div>
-            ))}
+            <AttentionList items={attention.slice(0, ATTN_PREVIEW)} deletable={false}
+              empty="Tidak ada PO yang mendekati Est. Selesai / Deadline (H-14) atau jadwal kirim besok." />
           </div>
         </Panel>
 
@@ -169,6 +163,19 @@ export default function Dashboard() {
           </div>
         </Panel>
       </div>
+
+      <Dialog open={allOpen} onOpenChange={setAllOpen}>
+        <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto rounded-2xl" data-testid="attn-all-dialog">
+          <DialogHeader>
+            <DialogTitle>Perlu perhatian · {attention.length} item</DialogTitle>
+            <DialogDescription>
+              PO yang mendekati Est. Selesai atau Deadline (H-14 &amp; H-7) dan jadwal pengiriman H-1.
+              Centang yang sudah ditangani — arahkan kursor ke item yang tercentang untuk melihat siapa &amp; kapan.
+            </DialogDescription>
+          </DialogHeader>
+          <AttentionList items={attention} detailed onOpen={() => setAllOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

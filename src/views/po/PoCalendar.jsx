@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Plus, X, ArrowUpRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, ArrowUpRight, Pencil, Flag } from "lucide-react";
 import { toast } from "sonner";
 import * as api from "@/lib/poApi";
 import { useLang } from "@/context/LangContext";
@@ -20,6 +20,8 @@ const CAT = {
   tunggu: { label: "Tahap 1–4 · menunggu", pill: "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300", dot: "bg-violet-600", bar: "bg-violet-600" },
   proses: { label: "Tahap 5–11 · produksi", pill: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300", dot: "bg-red-600", bar: "bg-red-600" },
   kirim: { label: "Pengiriman", pill: "bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300", dot: "bg-orange-600", bar: "bg-orange-600" },
+  // Deadline PO: blok merah pekat (beda dari pill tahap yang muda) supaya langsung terlihat penting.
+  deadline: { label: "Deadline PO", pill: "bg-rose-600 text-white ring-1 ring-rose-700 dark:bg-rose-600", dot: "bg-rose-600 ring-2 ring-rose-300", bar: "bg-rose-600" },
 };
 const catOfStage = (n) => (n === 11 ? "kirim" : stagePos(n) <= 4 ? "tunggu" : "proses");
 const catOfPo = (p) => {
@@ -86,7 +88,10 @@ export default function PoCalendar() {
       key: `p-${p.id}`, kind: "po", cat: catOfPo(p), po: p, label: p.po_number, sub: p.client_name,
       isStart: p.est_start === ds, isEnd: p.est_end === ds,
     }));
-    return [...sched, ...runs].filter((e) => !hideCat[e.cat]);
+    const deadlines = pos.filter((p) => p.deadline === ds && !p.computed?.is_completed).map((p) => ({
+      key: `d-${p.id}`, kind: "deadline", cat: "deadline", po: p, label: `⚑ ${p.po_number}`, sub: p.client_name,
+    }));
+    return [...deadlines, ...sched, ...runs].filter((e) => !hideCat[e.cat]);
   };
 
   const weekdays = lang === "id" ? ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -117,6 +122,7 @@ export default function PoCalendar() {
   const dayEntries = selectedDay ? entriesOf(selectedDay) : [];
   const daySched = dayEntries.filter((e) => e.kind === "jadwal");
   const dayRuns = dayEntries.filter((e) => e.kind === "po");
+  const dayDeadlines = dayEntries.filter((e) => e.kind === "deadline");
 
   return (
     <PageContainer
@@ -172,7 +178,7 @@ export default function PoCalendar() {
                   <div className="mt-1 hidden min-w-0 flex-col gap-[3px] sm:flex">
                     {entries.slice(0, MAX_PILLS).map((e) => (
                       <span key={e.key} title={`${e.label} · ${e.sub}`}
-                        className={`truncate rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold leading-tight ${CAT[e.cat].pill} ${e.kind === "jadwal" ? "" : "opacity-80"}`}>
+                        className={`truncate rounded-[5px] px-1.5 py-0.5 text-[10.5px] font-semibold leading-tight ${CAT[e.cat].pill} ${e.kind === "po" ? "opacity-80" : ""}`}>
                         {e.kind === "jadwal" ? (e.multi && !e.isStart ? "↳ " : "● ") : ""}{e.label}{e.sub ? ` · ${e.sub}` : ""}
                       </span>
                     ))}
@@ -195,6 +201,24 @@ export default function PoCalendar() {
           </div>
           <div className="flex-1 space-y-4 overflow-y-auto px-[18px] pb-[18px]">
             {dayEntries.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada PO pada tanggal ini.</p>}
+
+            {dayDeadlines.length > 0 && (
+              <section>
+                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-rose-600"><Flag className="h-3.5 w-3.5" /> Deadline</div>
+                <div className="space-y-2">
+                  {dayDeadlines.map((e) => (
+                    <Link key={e.key} to={`/po/pos/${e.po.id}`}
+                      className="flex gap-3 rounded-[10px] border border-rose-300 bg-rose-50 p-3 transition hover:bg-rose-100 dark:border-rose-500/40 dark:bg-rose-500/10">
+                      <span className="w-1 self-stretch rounded bg-rose-600" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{e.po.po_number} <span className="font-normal text-muted-foreground">· {e.sub}</span></div>
+                        <div className="mt-0.5 text-xs text-rose-700 dark:text-rose-300">Deadline hari ini · {e.po.computed?.current_stage_name || "-"}</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {daySched.length > 0 && (
               <section>

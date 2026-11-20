@@ -50,6 +50,7 @@ export const POST = handle(async (req) => {
     po_date: body.po_date || null,
     est_start: body.est_start || null,
     est_end: body.est_end || null,
+    deadline: body.deadline || null,
     print_machine: body.print_machine || null,
     enabled_stages: enabledStages,
     stage_data: stageData,

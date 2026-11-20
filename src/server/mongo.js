@@ -51,6 +51,8 @@ export const COL = {
   klienMutations: "klien_mutations",
   // Jatuh Tempo Klien (tool baru)
   tempoInvoices: "tempo_invoices",
+  // Status notifikasi / Perlu Perhatian: centang "sudah ditangani" (semua user) & hapus (per user)
+  notifState: "notif_state",
 };
 
 /** Key setting untuk opsi TOP tool Jatuh Tempo Klien. */

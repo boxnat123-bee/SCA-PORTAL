@@ -227,6 +227,7 @@ export function drawTable(ctx, header, rows, {
   boldCols = [],       // kolom isi yang ditebalkan
   onPageBreak = null,  // dipanggil di halaman baru sebelum header diulang (mis. ulang judul grup)
   footRow = null,      // baris TOTAL (tebal, garis atas tegas)
+  pairCols = [],       // kolom gabungan "nomor\ntanggal": tanggal abu-abu di bawah garis putus-putus
 } = {}) {
   const total = contentWidth(ctx);
   const w = weights && weights.length === header.length ? weights : header.map(() => 1);
@@ -238,6 +239,13 @@ export function drawTable(ctx, header, rows, {
 
   const layout = (cells, isHeader) => cells.map((cell, i) => {
     const raw = cell === null || cell === undefined || cell === "" ? "" : String(cell);
+    if (pairCols.includes(i)) {
+      // Header: judul + sub "No. ... Tgl"; isi: nomor (boleh wrap) + 1 baris tanggal.
+      if (isHeader) return [raw, ""];
+      if (!raw) return [""];
+      const [no = "", date = ""] = raw.split("\n");
+      return [...wrapLines(ctx, no || "-", widths[i] - pad * 2, fontSize, boldCols.includes(i)), date || "-"];
+    }
     if (!wrap) return [truncate(ctx, raw, widths[i] - pad * 2, fontSize, isHeader || boldCols.includes(i))];
     return wrapLines(ctx, raw, widths[i] - pad * 2, fontSize, isHeader || boldCols.includes(i));
   });
@@ -269,7 +277,19 @@ export function drawTable(ctx, header, rows, {
       const colorSpec = colColors[i];
       const cellColor = isHeader ? C.slate
         : typeof colorSpec === "function" ? (colorSpec(raw) || C.text) : (colorSpec || C.text);
+      const isPair = pairCols.includes(i) && !isFoot;
       cellLines.forEach((label, li) => {
+        const ty0 = yTop - 4 - fontSize - li * lineH + 1.5;
+        if (isPair && li === cellLines.length - 1) {
+          // Garis putus-putus pemisah nomor & tanggal, lalu tanggal (abu-abu / sub-judul).
+          const yl = ty0 + fontSize + 0.6;
+          ctx.page.drawLine({ start: { x: x + pad, y: yl }, end: { x: x + cw - pad, y: yl }, thickness: 0.4, color: C.border, dashArray: [1.5, 1.5] });
+          const sub = isHeader ? ["No.", "Tgl"] : [label];
+          const sz = fontSize - 0.8;
+          ctx.page.drawText(sub[0], { x: x + pad, y: ty0, font: ctx.font, size: sz, color: C.sub });
+          if (sub[1]) ctx.page.drawText(sub[1], { x: x + cw - pad - widthOf(ctx, sub[1], sz, false), y: ty0, font: ctx.font, size: sz, color: C.sub });
+          return;
+        }
         const isBold = isHeader || isFoot || boldCols.includes(i);
         const tw = widthOf(ctx, label, fontSize, isBold);
         const tx = rightCols.includes(i) ? x + cw - pad - tw : x + pad;

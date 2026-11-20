@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import * as tapi from "@/lib/tempoApi";
 import { apiError } from "@/context/AuthContext";
 import { formatRp } from "@/lib/format";
-import { dueBucket, formatDateShort, rowTint } from "@/lib/tempoFormat";
+import { dueBucket, formatDateShort, rowTint, todayISO } from "@/lib/tempoFormat";
 import PageContainer from "@/components/layout/PageContainer";
 import TablePagination from "@/components/TablePagination";
 import { StatusBadge, DueBadge } from "@/components/tempo/StatusBadge";
@@ -33,6 +33,24 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+
+// Kolom gabungan: nomor di atas, tanggal di bawah (garis putus-putus) — PO, Surat Jalan, Invoice.
+const PairHead = ({ children }) => (
+  <TableHead className="align-bottom">
+    {children}
+    <div className="mt-0.5 flex justify-between gap-2 border-t border-dashed border-border pt-0.5 text-[10px] font-normal text-muted-foreground">
+      <span>No.</span><span>Tgl</span>
+    </div>
+  </TableHead>
+);
+const PairCell = ({ no, date }) => (
+  <TableCell className="align-top">
+    <div className="whitespace-nowrap font-medium">{no || "-"}</div>
+    <div className="mt-0.5 whitespace-nowrap border-t border-dashed border-border pt-0.5 text-xs text-muted-foreground">
+      {date ? formatDateShort(date) : "-"}
+    </div>
+  </TableCell>
+);
 
 const DUE_FILTERS = [
   { value: "all", label: "Semua" },
@@ -134,10 +152,15 @@ export default function TempoInvoices() {
     else { setSortBy(col); setOrder("asc"); }
   };
 
-  const toggleStatus = async (inv) => {
-    const next = inv.status === "lunas" ? "belum_lunas" : "lunas";
+  // Tandai Lunas → minta tanggal pelunasan dulu; batalkan Lunas → langsung.
+  const [paidAsk, setPaidAsk] = useState(null); // { inv, date }
+  const toggleStatus = (inv) => {
+    if (inv.status === "lunas") return saveStatus(inv, "belum_lunas");
+    setPaidAsk({ inv, date: todayISO() });
+  };
+  const saveStatus = async (inv, next, paidDate) => {
     try {
-      const updated = await tapi.setInvoiceStatus(inv.id, next);
+      const updated = await tapi.setInvoiceStatus(inv.id, next, paidDate);
       toast.success(`Status diubah menjadi ${next === "lunas" ? "Lunas" : "Belum Lunas"}`);
       if (detail?.id === inv.id) setDetail(updated);
       reload();
@@ -310,12 +333,14 @@ export default function TempoInvoices() {
               <Table data-testid="tempo-table">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <Th col="client_name">Klien</Th>
-                    <TableHead>No. Invoice</TableHead>
+                    <Th col="client_name">Nama Klien</Th>
                     <TableHead>TOP</TableHead>
+                    <PairHead>PO</PairHead>
+                    <PairHead>Surat Jalan</PairHead>
+                    <PairHead>Invoice</PairHead>
+                    <Th col="total_amount" className="text-right">Nominal</Th>
+                    <TableHead className="text-right">PPN</TableHead>
                     <Th col="due_date">Jatuh Tempo</Th>
-                    <Th col="total_amount" className="text-right">Total</Th>
-                    <Th col="remaining_amount" className="text-right">Sisa</Th>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -326,9 +351,17 @@ export default function TempoInvoices() {
                       onClick={() => setDetail(inv)}
                       className={cn("cursor-pointer", rowTint(inv))}>
                       <TableCell className="font-medium">{inv.client_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{inv.invoice_number || "-"}</TableCell>
                       <TableCell>
-                        <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">{inv.top}</span>
+                        <span className="whitespace-nowrap rounded-md bg-secondary px-2 py-0.5 text-xs">{inv.top}</span>
+                      </TableCell>
+                      <PairCell no={inv.po_number} date={inv.po_date} />
+                      <PairCell no={inv.delivery_note_number} date={inv.delivery_note_date} />
+                      <PairCell no={inv.invoice_number} date={inv.invoice_date} />
+                      <TableCell className="whitespace-nowrap text-right font-medium [font-variant-numeric:tabular-nums]">
+                        {formatRp(inv.nominal_amount ?? inv.total_amount)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right [font-variant-numeric:tabular-nums]">
+                        {Number(inv.ppn_amount) ? formatRp(inv.ppn_amount) : <span className="text-muted-foreground">–</span>}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 whitespace-nowrap">
@@ -336,15 +369,12 @@ export default function TempoInvoices() {
                           <DueBadge dueDate={inv.due_date} status={inv.status} />
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-medium [font-variant-numeric:tabular-nums]">
-                        {formatRp(inv.total_amount)}
+                      <TableCell>
+                        <StatusBadge status={inv.status} />
+                        {inv.status !== "lunas" && Number(inv.paid_amount) > 0 && (
+                          <div className="mt-1 whitespace-nowrap text-[11px] text-rose-600 dark:text-rose-400">Sisa {formatRp(inv.remaining_amount)}</div>
+                        )}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right [font-variant-numeric:tabular-nums]">
-                        {inv.status === "lunas"
-                          ? <span className="text-muted-foreground">-</span>
-                          : <span className="text-rose-600 dark:text-rose-400">{formatRp(inv.remaining_amount)}</span>}
-                      </TableCell>
-                      <TableCell><StatusBadge status={inv.status} /></TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" title="Hapus invoice"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
@@ -413,6 +443,30 @@ export default function TempoInvoices() {
         onToggleStatus={toggleStatus} onDelete={handleDeleteInvoice} />
 
       <TopOptionsManager open={topOpen} onOpenChange={setTopOpen} onChanged={() => { refetchTop(); reload(); }} />
+
+      {/* Tanggal pelunasan saat menandai Lunas */}
+      <AlertDialog open={!!paidAsk} onOpenChange={(v) => !v && setPaidAsk(null)}>
+        <AlertDialogContent className="rounded-2xl" data-testid="paid-date-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Tandai Lunas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Invoice <b>{paidAsk?.inv.client_name}</b>{paidAsk?.inv.invoice_number ? ` (${paidAsk.inv.invoice_number})` : ""}. Isi tanggal pelunasannya.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <label htmlFor="paid-date" className="text-xs font-medium text-muted-foreground">Tanggal Pelunasan</label>
+            <Input id="paid-date" type="date" value={paidAsk?.date || ""} data-testid="paid-date-input"
+              onChange={(e) => setPaidAsk((p) => ({ ...p, date: e.target.value }))} />
+          </div>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-full">Batal</AlertDialogCancel>
+            <Button className="rounded-full" disabled={!paidAsk?.date} data-testid="paid-date-confirm"
+              onClick={() => { const { inv, date } = paidAsk; setPaidAsk(null); saveStatus(inv, "lunas", date); }}>
+              Simpan Lunas
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Hapus 1 invoice */}
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => !v && setPendingDelete(null)}>

@@ -1,8 +1,9 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import App from "@/App";
+import { installTabFix } from "@/lib/tabFix";
 
 export default function ClientApp() {
   const [queryClient] = useState(
@@ -13,6 +14,8 @@ export default function ClientApp() {
         },
       }),
   );
+
+  useEffect(() => { installTabFix(); }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

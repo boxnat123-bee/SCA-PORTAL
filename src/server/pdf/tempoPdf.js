@@ -61,35 +61,53 @@ export async function buildInvoicesPdf({ invoices, periodLabel, printedBy = "" }
   ]);
 
   section(ctx, "Daftar Invoice");
+  const pair = (no, date) => `${no || "-"}\n${fmtDate(date)}`;
+  const nominal = (i) => (i.nominal_amount ?? i.total_amount);
   const rows = list.map((i, idx) => [
     String(idx + 1),
     i.client_name || "-",
-    i.invoice_number || "-",
     i.top || "-",
-    fmtDate(i.invoice_date),
+    pair(i.po_number, i.po_date),
+    pair(i.delivery_note_number, i.delivery_note_date),
+    pair(i.invoice_number, i.invoice_date),
+    rp(nominal(i)),
+    Number(i.ppn_amount) ? rp(i.ppn_amount) : "-",
     fmtDate(i.due_date),
     rp(i.total_amount),
-    rp(i.paid_amount),
     rp(i.remaining_amount),
     STATUS_LABEL(i.status),
-    cicilanText(i),
   ]);
 
   if (rows.length === 0) {
     text(ctx, "Belum ada invoice.", { size: 9, color: C.sub });
     ctx.y -= 14;
   } else {
+    const totalNominal = list.reduce((s, i) => s + (Number(nominal(i)) || 0), 0);
+    const totalPpn = list.reduce((s, i) => s + (Number(i.ppn_amount) || 0), 0);
     drawTable(
       ctx,
-      ["No", "Nama Klien", "No. Invoice", "TOP", "Tgl Invoice", "Jatuh Tempo", "Total", "Terbayar", "Sisa", "Status", "Pembayaran Cicilan"],
+      ["No", "Nama Klien", "TOP", "PO", "Surat Jalan", "Invoice", "Nominal", "PPN", "Jatuh Tempo", "Total", "Sisa", "Status"],
       rows,
       {
-        weights: [0.45, 2.0, 1.3, 0.85, 1.05, 1.05, 1.35, 1.35, 1.35, 1.05, 2.6], rightCols: [6, 7, 8], fontSize: 7.5, wrap: true,
-        boldCols: [1, 9],
-        colColors: { 9: (v) => (v === "Lunas" ? C.green : C.red) },
-        footRow: ["", "TOTAL", "", "", "", "", rp(totalNilai), rp(totalBayar), rp(totalSisa), "", ""],
+        weights: [0.4, 1.75, 0.8, 1.2, 1.2, 1.2, 1.25, 1.1, 0.95, 1.3, 1.3, 1.1],
+        rightCols: [6, 7, 9, 10], fontSize: 7.5, wrap: true, pairCols: [3, 4, 5],
+        boldCols: [1, 9, 11],
+        colColors: { 10: C.red, 11: (v) => (v === "Lunas" ? C.green : C.red) },
+        footRow: ["", "TOTAL", "", "", "", "", rp(totalNominal), rp(totalPpn), "", rp(totalNilai), rp(totalSisa), ""],
       },
     );
+
+    // Rincian invoice cicilan (Terbayar & riwayat) dipisah agar tabel utama tetap lega.
+    const cicilan = list.filter((i) => i.top === "Cicilan");
+    if (cicilan.length) {
+      section(ctx, "Rincian Pembayaran Cicilan");
+      drawTable(
+        ctx,
+        ["Nama Klien", "No. Invoice", "Total", "Terbayar", "Sisa", "Pembayaran Cicilan"],
+        cicilan.map((i) => [i.client_name || "-", i.invoice_number || "-", rp(i.total_amount), rp(i.paid_amount), rp(i.remaining_amount), cicilanText(i)]),
+        { weights: [1.8, 1.2, 1.2, 1.2, 1.2, 3], rightCols: [2, 3, 4], fontSize: 7.5, wrap: true, boldCols: [0], colColors: { 3: C.green, 4: C.red } },
+      );
+    }
   }
 
   // ---------- Halaman akhir: klien terlambat bayar ----------
@@ -152,13 +170,16 @@ export async function buildInvoiceDetailPdf({ invoice }) {
     [
       ["Nama Klien", inv.client_name || "-"],
       ["TOP / Sistem Pembayaran", inv.top || "-"],
-      ["Tanggal PO", fmtDate(inv.po_date)],
       ["No. PO", inv.po_number || "-"],
+      ["Tanggal PO", fmtDate(inv.po_date)],
       ["No. Surat Jalan", inv.delivery_note_number || "-"],
+      ["Tanggal Surat Jalan", fmtDate(inv.delivery_note_date)],
       ["No. Invoice", inv.invoice_number || "-"],
       ["Tanggal Invoice", fmtDate(inv.invoice_date)],
+      ["Nominal", rp(inv.nominal_amount ?? inv.total_amount)],
+      ["PPN", Number(inv.ppn_amount) ? rp(inv.ppn_amount) : "-"],
       ["Tanggal Jatuh Tempo", fmtDate(inv.due_date)],
-      ["Nominal Total", rp(inv.total_amount)],
+      ["Total Tagihan", rp(inv.total_amount)],
       ["Terbayar", rp(inv.paid_amount)],
       ["Sisa Tagihan", rp(inv.remaining_amount)],
       ["Status", STATUS_LABEL(inv.status)],

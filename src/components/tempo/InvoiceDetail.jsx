@@ -69,7 +69,7 @@ export default function InvoiceDetail({ open, onOpenChange, invoice, onEdit, onT
         <Card className="rounded-2xl bg-secondary/50 p-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Nominal Total</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Total Tagihan</div>
               <div className="font-display text-2xl font-extrabold [font-variant-numeric:tabular-nums]">{formatRp(total)}</div>
             </div>
             <div className="text-right">
@@ -89,13 +89,16 @@ export default function InvoiceDetail({ open, onOpenChange, invoice, onEdit, onT
         </Card>
 
         <div className="mt-1">
+          <Row label="No. PO" value={invoice.po_number || "-"} />
+          <Row label="Tanggal PO" value={formatDateLong(invoice.po_date)} />
+          <Row label="No. Surat Jalan" value={invoice.delivery_note_number || "-"} />
+          <Row label="Tanggal Surat Jalan" value={formatDateLong(invoice.delivery_note_date)} />
           <Row label="No. Invoice" value={invoice.invoice_number || "-"} />
           <Row label="Tanggal Invoice" value={formatDateLong(invoice.invoice_date)} />
+          <Row label="Nominal" value={formatRp(invoice.nominal_amount ?? invoice.total_amount)} />
+          <Row label="PPN" value={Number(invoice.ppn_amount) ? formatRp(invoice.ppn_amount) : "-"} />
           <Row label="Jatuh Tempo" value={formatDateLong(invoice.due_date)} />
           {invoice.status === "lunas" && invoice.paid_date && <Row label="Tanggal Lunas" value={formatDateLong(invoice.paid_date)} />}
-          <Row label="Tanggal PO" value={formatDateLong(invoice.po_date)} />
-          <Row label="No. PO" value={invoice.po_number || "-"} />
-          <Row label="No. Surat Jalan" value={invoice.delivery_note_number || "-"} />
         </div>
 
         {invoice.top === "Cicilan" && (

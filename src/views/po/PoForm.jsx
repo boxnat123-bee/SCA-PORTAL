@@ -23,7 +23,7 @@ export default function PoForm() {
   const [form, setForm] = useState({
     po_number: "", client_name: "", item_type: "", material: "", paper_size_plano: "", paper_size: "",
     size_single_face: "", size_kres_cetak: "", size_kres_pisau: "",
-    quantity: "", po_date: "", est_start: "", est_end: "", print_machine: "",
+    quantity: "", po_date: "", est_start: "", est_end: "", deadline: "", print_machine: "",
     enabled_stages: [] /* PO baru: tidak ada tahap terpilih otomatis */, notes: "",
   });
   const [conflicts, setConflicts] = useState([]);
@@ -37,7 +37,7 @@ export default function PoForm() {
           material: p.material || "", paper_size_plano: p.paper_size_plano || "", paper_size: p.paper_size || "", quantity: p.quantity || "",
           size_single_face: p.size_single_face || "", size_kres_cetak: p.size_kres_cetak || "",
           size_kres_pisau: p.size_kres_pisau || "",
-          po_date: p.po_date || "", est_start: p.est_start || "", est_end: p.est_end || "",
+          po_date: p.po_date || "", est_start: p.est_start || "", est_end: p.est_end || "", deadline: p.deadline || "",
           print_machine: p.print_machine || "",
           enabled_stages: sortStages(p.enabled_stages || []), notes: p.notes || "",
         });
@@ -116,6 +116,7 @@ export default function PoForm() {
             </div>
             {field("est_start", t("estStart"), "date")}
             {field("est_end", t("estEnd"), "date")}
+            {field("deadline", t("deadline"), "date")}
           </div>
 
           {conflicts.length > 0 && (

@@ -52,6 +52,7 @@ export const PUT = handle(async (req, { params }) => {
     po_date: body.po_date ?? existing.po_date ?? null,
     est_start: body.est_start ?? existing.est_start ?? null,
     est_end: body.est_end ?? existing.est_end ?? null,
+    deadline: (body.deadline ?? existing.deadline) || null,
     print_machine: body.print_machine ?? existing.print_machine ?? null,
     enabled_stages: enabledStages,
     stage_data: mergedStage,

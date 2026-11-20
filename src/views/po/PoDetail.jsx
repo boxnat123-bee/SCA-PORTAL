@@ -84,6 +84,7 @@ export default function PoDetail() {
         <Info label={t("poDate")} value={fmtDate(po.po_date)} />
         <Info label={t("estStart")} value={fmtDate(po.est_start)} />
         <Info label={t("estEnd")} value={fmtDate(po.est_end)} />
+        <Info label={t("deadline")} value={po.deadline ? fmtDate(po.deadline) : ""} />
         <Info label={t("printMachine")} value={po.print_machine} />
         <Info label={t("createdBy")} value={po.created_by} />
         {po.notes && <div className="col-span-2 sm:col-span-3 lg:col-span-4"><Info label={t("notes")} value={po.notes} /></div>}

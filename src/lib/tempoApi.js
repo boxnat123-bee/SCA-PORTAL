@@ -7,8 +7,8 @@ export const createInvoice = (data) => api.post("/tempo/invoices", data).then((r
 export const updateInvoice = (id, data) => api.put(`/tempo/invoices/${id}`, data).then((r) => r.data);
 export const deleteInvoice = (id) => api.delete(`/tempo/invoices/${id}`).then((r) => r.data);
 export const deleteAllInvoices = () => api.delete("/tempo/invoices").then((r) => r.data);
-export const setInvoiceStatus = (id, status) =>
-  api.patch(`/tempo/invoices/${id}/status`, { status }).then((r) => r.data);
+export const setInvoiceStatus = (id, status, paid_date) =>
+  api.patch(`/tempo/invoices/${id}/status`, { status, paid_date }).then((r) => r.data);
 export const addInstallment = (id, data) =>
   api.post(`/tempo/invoices/${id}/installments`, data).then((r) => r.data);
 export const deleteInstallment = (id, insId) =>

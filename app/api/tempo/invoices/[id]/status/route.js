@@ -14,9 +14,12 @@ export const PATCH = handle(async (req, { params }) => {
   const status = String(body?.status ?? "");
   if (!STATUSES.includes(status)) throw new HttpError(400, "Status harus 'lunas' atau 'belum_lunas'");
 
+  // Tanggal pelunasan dipilih user saat menandai Lunas (default hari ini).
+  const paid = String(body?.paid_date || "");
+  const paidDate = status === "lunas" ? (/^\d{4}-\d{2}-\d{2}$/.test(paid) ? paid : new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10)) : null;
   const db = await getDb();
   await db
     .collection(COL.tempoInvoices)
-    .updateOne({ id }, { $set: { status, updated_at: nowIso() } });
+    .updateOne({ id }, { $set: { status, paid_date: paidDate, updated_at: nowIso() } });
   return json(enrich(await db.collection(COL.tempoInvoices).findOne({ id })));
 });

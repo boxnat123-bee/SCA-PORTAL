@@ -55,9 +55,12 @@ export function buildInvoicePayload(body, existing = null) {
     po_date: body?.po_date || null,
     po_number: body?.po_number ?? null,
     delivery_note_number: body?.delivery_note_number ?? null,
+    delivery_note_date: body?.delivery_note_date || null,
     invoice_number: body?.invoice_number ?? null,
     invoice_date: body?.invoice_date || null,
-    total_amount: num(body?.total_amount),
+    // Total tagihan = Nominal + PPN (invoice lama tanpa nominal: total dipakai sebagai nominal).
+    nominal_amount: num(body?.nominal_amount ?? body?.total_amount),
+    ppn_amount: num(body?.ppn_amount),
     due_date: body?.due_date || null,
     status,
     // Tanggal pelunasan (non-cicilan) — dipakai untuk menghitung keterlambatan bayar.
@@ -65,6 +68,7 @@ export function buildInvoicePayload(body, existing = null) {
     installments: normalizeInstallments(body?.installments),
     updated_at: nowIso(),
   };
+  payload.total_amount = round2(payload.nominal_amount + payload.ppn_amount);
   // Auto-lunas bila cicilan sudah menutup total tagihan.
   if (payload.top === "Cicilan" && payload.total_amount > 0) {
     const paid = payload.installments.reduce((s, i) => s + num(i.amount), 0);

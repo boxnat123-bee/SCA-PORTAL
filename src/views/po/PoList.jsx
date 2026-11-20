@@ -29,11 +29,11 @@ function BucketBadge({ bucket }) {
   );
 }
 
-function RowInfo({ label, value, wide }) {
+function RowInfo({ label, value, wide, danger }) {
   return (
     <div className={`min-w-0 ${wide ? "po-info-wide" : ""}`}>
-      <div className="truncate text-[10px] uppercase leading-4 tracking-wide text-muted-foreground">{label}</div>
-      <div className="truncate font-medium" title={value || ""}>{value || "-"}</div>
+      <div className={`truncate text-[10px] uppercase leading-4 tracking-wide ${danger ? "font-semibold text-rose-600" : "text-muted-foreground"}`}>{label}</div>
+      <div className={`truncate font-medium ${danger ? "text-rose-600 dark:text-rose-400" : ""}`} title={value || ""}>{value || "-"}</div>
     </div>
   );
 }
@@ -228,6 +228,7 @@ export default function PoList() {
                     <RowInfo label="Qty Order" value={po.quantity} />
                     <RowInfo label="Mesin" value={po.print_machine} />
                     <RowInfo label="Est. Produksi" value={(po.est_start || po.est_end) ? `${fmtDate(po.est_start)} → ${fmtDate(po.est_end)}` : ""} wide />
+                    <RowInfo label="Deadline" value={po.deadline ? fmtDate(po.deadline) : ""} danger={!!po.deadline} />
                     <RowInfo label={t("stage")} value={po.computed?.current_stage_name} wide />
                   </div>
 

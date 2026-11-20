@@ -19,10 +19,11 @@ import { formatRp } from "@/lib/format";
 import { formatNumberInput, parseNumberInput, todayISO } from "@/lib/tempoFormat";
 
 const empty = {
-  client_name: "", top: "Cash", po_date: "", po_number: "",
-  delivery_note_number: "", invoice_number: "", invoice_date: todayISO(),
-  total_amount: 0, due_date: "", status: "belum_lunas", paid_date: "", installments: [],
+  client_name: "", top: "Cash", po_number: "", po_date: "",
+  delivery_note_number: "", delivery_note_date: "", invoice_number: "", invoice_date: todayISO(),
+  nominal_amount: 0, ppn_amount: 0, due_date: "", status: "belum_lunas", paid_date: "", installments: [],
 };
+const rupiahText = (v) => (v ? Number(v).toLocaleString("id-ID") : "");
 
 const Field = ({ label, children }) => (
   <div className="space-y-1.5">
@@ -33,24 +34,32 @@ const Field = ({ label, children }) => (
 
 export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = [], refetchTop, onSaved }) {
   const [form, setForm] = useState(empty);
-  const [amountText, setAmountText] = useState("");
+  const [amountText, setAmountText] = useState({ nominal: "", ppn: "" });
   const [saving, setSaving] = useState(false);
   const [addingTop, setAddingTop] = useState(false);
   const [newTop, setNewTop] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    const base = invoice ? { ...empty, ...invoice } : { ...empty, invoice_date: todayISO() };
+    // Invoice lama (sebelum ada PPN): nominal = total tagihan.
+    const base = invoice
+      ? { ...empty, ...invoice, nominal_amount: invoice.nominal_amount ?? invoice.total_amount ?? 0, ppn_amount: invoice.ppn_amount ?? 0 }
+      : { ...empty, invoice_date: todayISO() };
     setForm(base);
-    setAmountText(base.total_amount ? Number(base.total_amount).toLocaleString("id-ID") : "");
+    setAmountText({ nominal: rupiahText(base.nominal_amount), ppn: rupiahText(base.ppn_amount) });
     setAddingTop(false);
     setNewTop("");
   }, [open, invoice]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  const totalAmount = (Number(form.nominal_amount) || 0) + (Number(form.ppn_amount) || 0);
   const installmentsTotal = (form.installments || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  const remaining = (Number(form.total_amount) || 0) - installmentsTotal;
+  const remaining = totalAmount - installmentsTotal;
+  const setMoney = (key, field) => (e) => {
+    setAmountText((t) => ({ ...t, [key]: formatNumberInput(e.target.value) }));
+    set(field, parseNumberInput(e.target.value));
+  };
 
   const addInstallmentRow = () =>
     set("installments", [
@@ -91,7 +100,8 @@ export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = 
     try {
       const payload = {
         ...form,
-        total_amount: Number(form.total_amount) || 0,
+        nominal_amount: Number(form.nominal_amount) || 0,
+        ppn_amount: Number(form.ppn_amount) || 0,
         installments: (form.installments || []).map(({ _amountText, ...rest }) => ({
           ...rest,
           sequence: Number(rest.sequence),
@@ -157,12 +167,24 @@ export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = 
             )}
           </Field>
 
-          <Field label="Nominal Total (Rp)">
-            <Input data-testid="form-total-amount" inputMode="numeric" value={amountText} placeholder="0"
-              onChange={(e) => {
-                setAmountText(formatNumberInput(e.target.value));
-                set("total_amount", parseNumberInput(e.target.value));
-              }} />
+          <Field label="No. PO">
+            <Input data-testid="form-po-number" value={form.po_number || ""}
+              onChange={(e) => set("po_number", e.target.value)} placeholder="PO-001" />
+          </Field>
+
+          <Field label="Tanggal PO">
+            <Input type="date" data-testid="form-po-date" value={form.po_date || ""}
+              onChange={(e) => set("po_date", e.target.value)} />
+          </Field>
+
+          <Field label="No. Surat Jalan">
+            <Input data-testid="form-dn-number" value={form.delivery_note_number || ""}
+              onChange={(e) => set("delivery_note_number", e.target.value)} placeholder="SJ-001" />
+          </Field>
+
+          <Field label="Tanggal Surat Jalan">
+            <Input type="date" data-testid="form-dn-date" value={form.delivery_note_date || ""}
+              onChange={(e) => set("delivery_note_date", e.target.value)} />
           </Field>
 
           <Field label="No. Invoice">
@@ -175,25 +197,27 @@ export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = 
               onChange={(e) => set("invoice_date", e.target.value)} />
           </Field>
 
+          <Field label="Nominal (Rp)">
+            <Input data-testid="form-total-amount" inputMode="numeric" value={amountText.nominal} placeholder="0"
+              onChange={setMoney("nominal", "nominal_amount")} />
+          </Field>
+
+          <Field label="PPN (Rp)">
+            <Input data-testid="form-ppn-amount" inputMode="numeric" value={amountText.ppn} placeholder="0"
+              onChange={setMoney("ppn", "ppn_amount")} />
+          </Field>
+
           <Field label="Tanggal Jatuh Tempo">
             <Input type="date" data-testid="form-due-date" value={form.due_date || ""}
               onChange={(e) => set("due_date", e.target.value)} />
           </Field>
 
-          <Field label="Tanggal PO">
-            <Input type="date" data-testid="form-po-date" value={form.po_date || ""}
-              onChange={(e) => set("po_date", e.target.value)} />
-          </Field>
-
-          <Field label="No. PO">
-            <Input data-testid="form-po-number" value={form.po_number || ""}
-              onChange={(e) => set("po_number", e.target.value)} placeholder="PO-001" />
-          </Field>
-
-          <Field label="No. Surat Jalan">
-            <Input data-testid="form-dn-number" value={form.delivery_note_number || ""}
-              onChange={(e) => set("delivery_note_number", e.target.value)} placeholder="SJ-001" />
-          </Field>
+          <div className="flex items-end">
+            <div className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2">
+              <div className="text-xs font-medium text-muted-foreground">Total Tagihan (Nominal + PPN)</div>
+              <div className="text-sm font-semibold" data-testid="form-total-tagihan">{formatRp(totalAmount)}</div>
+            </div>
+          </div>
 
           <div className="flex items-end">
             <div className="flex w-full items-center justify-between rounded-xl border border-border bg-secondary/50 px-3 py-2">
@@ -266,7 +290,7 @@ export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = 
                   {formatRp(Math.max(remaining, 0))}
                 </b>
               </span>
-              {remaining <= 0 && Number(form.total_amount) > 0 && (
+              {remaining <= 0 && totalAmount > 0 && (
                 <span className="text-xs text-muted-foreground">Status akan otomatis menjadi Lunas saat disimpan.</span>
               )}
             </div>
