@@ -1,8 +1,10 @@
-import { Inter } from "next/font/google";
+import { Inter, Archivo_Black } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
 
 // Font utama UI baru: Inter (teks & angka, angka tabular).
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+// Huruf tebal khusus kalimat wejangan di halaman login.
+const archivoBlack = Archivo_Black({ weight: "400", subsets: ["latin"], variable: "--font-quote", display: "swap" });
 import "@/index.css";
 import "@/App.css";
 
@@ -22,7 +24,7 @@ export default function RootLayout({ children }) {
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${inter.variable} ${GeistMono.variable}`}
+      className={`${inter.variable} ${archivoBlack.variable} ${GeistMono.variable}`}
     >
       <body>
         <noscript>Anda perlu mengaktifkan JavaScript untuk menjalankan aplikasi ini.</noscript>
