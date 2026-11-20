@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { handle, readJson, HttpError } from "@/server/http";
 import { getDb, COL, nowIso } from "@/server/mongo";
-import { verifyPassword, createAccessToken, setAuthCookie } from "@/server/auth";
+import { verifyPassword, createAccessToken, clearAuthCookie } from "@/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,5 +40,5 @@ export const POST = handle(async (req) => {
   const res = NextResponse.json({
     id: user.id, name: user.name, username: user.username, email: user.email || "", role: user.role, token,
   });
-  return setAuthCookie(res, token);
+  return clearAuthCookie(res);
 });

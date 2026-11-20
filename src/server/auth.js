@@ -34,17 +34,7 @@ export async function createAccessToken({ id, username, role, sid }) {
     .sign(secretKey());
 }
 
-export function setAuthCookie(res, token) {
-  res.cookies.set("access_token", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: TOKEN_HOURS * 3600,
-    path: "/",
-  });
-  return res;
-}
-
+/** Hapus cookie login lama (versi sebelumnya memakai cookie 12 jam). */
 export function clearAuthCookie(res) {
   res.cookies.set("access_token", "", {
     httpOnly: true,
@@ -56,9 +46,9 @@ export function clearAuthCookie(res) {
   return res;
 }
 
+// Token hanya dari header Authorization (disimpan per-tab di browser) — tidak lewat cookie,
+// supaya menutup tab berarti harus login ulang.
 function tokenFromRequest(req) {
-  const cookie = req.cookies?.get?.("access_token")?.value;
-  if (cookie) return cookie;
   const header = req.headers.get("authorization") || "";
   if (header.startsWith("Bearer ")) return header.slice(7);
   return null;

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import api from "@/lib/api";
+import api, { TOKEN_KEY, getToken } from "@/lib/api";
 
 const AuthContext = createContext(null);
 
@@ -16,6 +16,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // undefined=loading, null=guest
 
   const loadMe = useCallback(async () => {
+    // Bersihkan sisa token lama (versi sebelumnya menyimpan di localStorage).
+    localStorage.removeItem("sca_token");
+    localStorage.removeItem("stokku_token");
+    if (!getToken()) { setUser(null); return; }
     try {
       const { data } = await api.get("/auth/me");
       setUser(data);
@@ -30,8 +34,7 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     const { data } = await api.post("/auth/login", { username, password });
     if (data.token) {
-      localStorage.setItem("stokku_token", data.token);
-      localStorage.setItem("sca_token", data.token);
+      sessionStorage.setItem(TOKEN_KEY, data.token);
     }
     setUser(data);
     return data;
@@ -39,8 +42,7 @@ export function AuthProvider({ children }) {
 
   const logout = async (type = "manual") => {
     try { await api.post("/auth/logout", { type }); } catch {}
-    localStorage.removeItem("sca_token");
-    localStorage.removeItem("stokku_token");
+    sessionStorage.removeItem(TOKEN_KEY);
     setUser(null);
   };
 

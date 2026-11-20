@@ -6,11 +6,13 @@ export const API = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
 const api = axios.create({ baseURL: API, withCredentials: true });
 
+// Token login disimpan per-tab (sessionStorage): menutup tab = harus login ulang.
+export const TOKEN_KEY = "sca_token";
+export const getToken = () => (typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null);
+
 api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("stokku_token");
-    if (token) config.headers["Authorization"] = `Bearer ${token}`;
-  }
+  const token = getToken();
+  if (token) config.headers["Authorization"] = `Bearer ${token}`;
   return config;
 });
 
