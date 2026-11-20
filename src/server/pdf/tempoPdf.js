@@ -12,15 +12,14 @@ const fmtDate = (iso) => {
   return `${d}/${m}/${y}`;
 };
 
-/** Rincian cicilan (ditulis menurun di bawah baris invoice): judul + satu baris per cicilan. */
+/** Rincian cicilan di bawah baris invoice: satu baris per cicilan (ke-, nominal, tanggal bayar). */
 function cicilanLines(inv) {
   if (inv.top !== "Cicilan") return null;
   const list = [...(inv.installments || [])]
     .filter((c) => Number(c.amount) > 0 || c.date)
     .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-  const head = `Pembayaran cicilan · Terbayar ${rp(inv.paid_amount)} · Sisa ${rp(inv.remaining_amount)}`;
-  if (!list.length) return [head, "Belum ada pembayaran"];
-  return [head, ...list.map((c) => `Cicilan ke-${c.sequence}\t${fmtDate(c.date)}\t${rp(c.amount)}`)];
+  if (!list.length) return ["Belum ada pembayaran cicilan"];
+  return list.map((c) => `Cicilan ke-${c.sequence}\t${rp(c.amount)}\t${fmtDate(c.date)}`);
 }
 
 const STATUS_LABEL = (s) => (s === "lunas" ? "Lunas" : "Belum Lunas");

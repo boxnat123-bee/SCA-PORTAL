@@ -287,7 +287,8 @@ export function drawTable(ctx, header, rows, {
           ctx.page.drawLine({ start: { x: x + pad, y: yl }, end: { x: x + cw - pad, y: yl }, thickness: 0.4, color: C.border, dashArray: [1.5, 1.5] });
           const sub = isHeader ? ["No.", "Tgl"] : [label];
           const sz = fontSize - 0.8;
-          ctx.page.drawText(sub[0], { x: x + pad, y: ty0, font: ctx.font, size: sz, color: C.sub });
+          // Tanggal isi: abu gelap (#334155) agar tetap terbaca; sub-judul header tetap abu biasa.
+          ctx.page.drawText(sub[0], { x: x + pad, y: ty0, font: ctx.font, size: sz, color: isHeader ? C.sub : rgb(0.2, 0.255, 0.333) });
           if (sub[1]) ctx.page.drawText(sub[1], { x: x + cw - pad - widthOf(ctx, sub[1], sz, false), y: ty0, font: ctx.font, size: sz, color: C.sub });
           return;
         }
@@ -322,7 +323,7 @@ export function drawTable(ctx, header, rows, {
     ctx.page.drawRectangle({ x: x0, y: yTop - h, width: total - widths[0], height: h, color: rgb(0.973, 0.98, 0.988) });
     // Teks dengan "\t" dibagi ke kolom-kolom kecil berjarak tetap (rata seperti tabel mini).
     lines.forEach((l, i) => l.split("\t").forEach((part, k) => ctx.page.drawText(sanitize(part), {
-      x: x0 + pad + k * 80, y: yTop - 4 - fontSize - i * lineH + 1.5, font: i === 0 ? ctx.bold : ctx.font, size: fontSize, color: i === 0 ? C.slate : C.text,
+      x: x0 + pad + k * 80, y: yTop - 4 - fontSize - i * lineH + 1.5, font: ctx.font, size: fontSize, color: C.text,
     })));
     ctx.page.drawLine({ start: { x: ctx.margin, y: yTop - h }, end: { x: ctx.margin + total, y: yTop - h }, thickness: 0.6, color: C.rule });
     ctx.y = yTop - h;

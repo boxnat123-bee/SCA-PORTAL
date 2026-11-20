@@ -259,7 +259,11 @@ export async function sortedInvoices({ search, status, sort_by = "due_date", ord
   };
   const keyfn = keyMap[sort_by] || keyMap.due_date;
   const reverse = order === "desc" ? -1 : 1;
+  // Yang sudah Lunas selalu di bawah; urutan pilihan user berlaku di dalam tiap kelompok.
   docs.sort((a, b) => {
+    const la = a.status === "lunas" ? 1 : 0;
+    const lb = b.status === "lunas" ? 1 : 0;
+    if (la !== lb) return la - lb;
     const ka = keyfn(a);
     const kb = keyfn(b);
     if (ka < kb) return -1 * reverse;
