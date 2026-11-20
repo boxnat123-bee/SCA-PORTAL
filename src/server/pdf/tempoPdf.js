@@ -12,14 +12,15 @@ const fmtDate = (iso) => {
   return `${d}/${m}/${y}`;
 };
 
-/** Rincian cicilan per baris: "Ke-1  01/10/2026  Rp 5.000.000". */
-function cicilanText(inv) {
-  if (inv.top !== "Cicilan") return "-";
+/** Rincian cicilan (ditulis menurun di bawah baris invoice): judul + satu baris per cicilan. */
+function cicilanLines(inv) {
+  if (inv.top !== "Cicilan") return null;
   const list = [...(inv.installments || [])]
     .filter((c) => Number(c.amount) > 0 || c.date)
     .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-  if (!list.length) return "Belum ada pembayaran";
-  return list.map((c) => `Ke-${c.sequence}  ${fmtDate(c.date)}  ${rp(c.amount)}`).join("\n");
+  const head = `Pembayaran cicilan · Terbayar ${rp(inv.paid_amount)} · Sisa ${rp(inv.remaining_amount)}`;
+  if (!list.length) return [head, "Belum ada pembayaran"];
+  return [head, ...list.map((c) => `Cicilan ke-${c.sequence}\t${fmtDate(c.date)}\t${rp(c.amount)}`)];
 }
 
 const STATUS_LABEL = (s) => (s === "lunas" ? "Lunas" : "Belum Lunas");
@@ -94,20 +95,9 @@ export async function buildInvoicesPdf({ invoices, periodLabel, printedBy = "" }
         boldCols: [1, 9, 11],
         colColors: { 10: C.red, 11: (v) => (v === "Lunas" ? C.green : C.red) },
         footRow: ["", "TOTAL", "", "", "", "", rp(totalNominal), rp(totalPpn), "", rp(totalNilai), rp(totalSisa), ""],
+        detailRows: list.map(cicilanLines),
       },
     );
-
-    // Rincian invoice cicilan (Terbayar & riwayat) dipisah agar tabel utama tetap lega.
-    const cicilan = list.filter((i) => i.top === "Cicilan");
-    if (cicilan.length) {
-      section(ctx, "Rincian Pembayaran Cicilan");
-      drawTable(
-        ctx,
-        ["Nama Klien", "No. Invoice", "Total", "Terbayar", "Sisa", "Pembayaran Cicilan"],
-        cicilan.map((i) => [i.client_name || "-", i.invoice_number || "-", rp(i.total_amount), rp(i.paid_amount), rp(i.remaining_amount), cicilanText(i)]),
-        { weights: [1.8, 1.2, 1.2, 1.2, 1.2, 3], rightCols: [2, 3, 4], fontSize: 7.5, wrap: true, boldCols: [0], colColors: { 3: C.green, 4: C.red } },
-      );
-    }
   }
 
   // ---------- Halaman akhir: klien terlambat bayar ----------

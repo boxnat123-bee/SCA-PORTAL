@@ -228,6 +228,7 @@ export function drawTable(ctx, header, rows, {
   onPageBreak = null,  // dipanggil di halaman baru sebelum header diulang (mis. ulang judul grup)
   footRow = null,      // baris TOTAL (tebal, garis atas tegas)
   pairCols = [],       // kolom gabungan "nomor\ntanggal": tanggal abu-abu di bawah garis putus-putus
+  detailRows = null,   // per baris: daftar teks rincian (mis. cicilan) ditulis menurun di bawah baris itu
 } = {}) {
   const total = contentWidth(ctx);
   const w = weights && weights.length === header.length ? weights : header.map(() => 1);
@@ -308,10 +309,32 @@ export function drawTable(ctx, header, rows, {
     ctx.y = yBot;
   };
 
+  // Rincian di bawah baris: satu baris teks per item, menjorok dari kolom ke-2, latar abu muda.
+  const drawDetail = (items) => {
+    const x0 = ctx.margin + widths[0];
+    const lines = items.flatMap((t) => (String(t).includes("\t") ? [String(t)] : wrapLines(ctx, t, total - widths[0] - pad * 2, fontSize, false)));
+    const h = lines.length * lineH + 7;
+    if (ensure(ctx, h)) {
+      if (onPageBreak) onPageBreak();
+      drawRow(header, { isHeader: true });
+    }
+    const yTop = ctx.y;
+    ctx.page.drawRectangle({ x: x0, y: yTop - h, width: total - widths[0], height: h, color: rgb(0.973, 0.98, 0.988) });
+    // Teks dengan "\t" dibagi ke kolom-kolom kecil berjarak tetap (rata seperti tabel mini).
+    lines.forEach((l, i) => l.split("\t").forEach((part, k) => ctx.page.drawText(sanitize(part), {
+      x: x0 + pad + k * 80, y: yTop - 4 - fontSize - i * lineH + 1.5, font: i === 0 ? ctx.bold : ctx.font, size: fontSize, color: i === 0 ? C.slate : C.text,
+    })));
+    ctx.page.drawLine({ start: { x: ctx.margin, y: yTop - h }, end: { x: ctx.margin + total, y: yTop - h }, thickness: 0.6, color: C.rule });
+    ctx.y = yTop - h;
+  };
+
   ensure(ctx, baseH * 2);
   drawRow(header, { isHeader: true });
   const data = rows.length ? rows : [header.map(() => "-")];
-  data.forEach((r) => drawRow(r));
+  data.forEach((r, i) => {
+    drawRow(r);
+    if (detailRows?.[i]?.length) drawDetail(detailRows[i]);
+  });
   if (footRow) drawRow(footRow, { isFoot: true });
   ctx.y -= 10;
 }

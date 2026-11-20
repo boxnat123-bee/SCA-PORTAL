@@ -34,24 +34,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-// Kolom gabungan: nomor di atas, tanggal di bawah (garis putus-putus) — PO, Surat Jalan, Invoice.
-const PairHead = ({ children }) => (
-  <TableHead className="align-bottom">
-    {children}
-    <div className="mt-0.5 flex justify-between gap-2 border-t border-dashed border-border pt-0.5 text-[10px] font-normal text-muted-foreground">
-      <span>No.</span><span>Tgl</span>
-    </div>
-  </TableHead>
-);
-const PairCell = ({ no, date }) => (
-  <TableCell className="align-top">
-    <div className="whitespace-nowrap font-medium">{no || "-"}</div>
-    <div className="mt-0.5 whitespace-nowrap border-t border-dashed border-border pt-0.5 text-xs text-muted-foreground">
-      {date ? formatDateShort(date) : "-"}
-    </div>
-  </TableCell>
-);
-
 const DUE_FILTERS = [
   { value: "all", label: "Semua" },
   { value: "overdue", label: "Lewat Tempo" },
@@ -333,14 +315,12 @@ export default function TempoInvoices() {
               <Table data-testid="tempo-table">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <Th col="client_name">Nama Klien</Th>
+                    <Th col="client_name">Klien</Th>
+                    <TableHead>No. Invoice</TableHead>
                     <TableHead>TOP</TableHead>
-                    <PairHead>PO</PairHead>
-                    <PairHead>Surat Jalan</PairHead>
-                    <PairHead>Invoice</PairHead>
-                    <Th col="total_amount" className="text-right">Nominal</Th>
-                    <TableHead className="text-right">PPN</TableHead>
                     <Th col="due_date">Jatuh Tempo</Th>
+                    <Th col="total_amount" className="text-right">Total</Th>
+                    <Th col="remaining_amount" className="text-right">Sisa</Th>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -351,17 +331,9 @@ export default function TempoInvoices() {
                       onClick={() => setDetail(inv)}
                       className={cn("cursor-pointer", rowTint(inv))}>
                       <TableCell className="font-medium">{inv.client_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{inv.invoice_number || "-"}</TableCell>
                       <TableCell>
-                        <span className="whitespace-nowrap rounded-md bg-secondary px-2 py-0.5 text-xs">{inv.top}</span>
-                      </TableCell>
-                      <PairCell no={inv.po_number} date={inv.po_date} />
-                      <PairCell no={inv.delivery_note_number} date={inv.delivery_note_date} />
-                      <PairCell no={inv.invoice_number} date={inv.invoice_date} />
-                      <TableCell className="whitespace-nowrap text-right font-medium [font-variant-numeric:tabular-nums]">
-                        {formatRp(inv.nominal_amount ?? inv.total_amount)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right [font-variant-numeric:tabular-nums]">
-                        {Number(inv.ppn_amount) ? formatRp(inv.ppn_amount) : <span className="text-muted-foreground">–</span>}
+                        <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">{inv.top}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 whitespace-nowrap">
@@ -369,12 +341,15 @@ export default function TempoInvoices() {
                           <DueBadge dueDate={inv.due_date} status={inv.status} />
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <StatusBadge status={inv.status} />
-                        {inv.status !== "lunas" && Number(inv.paid_amount) > 0 && (
-                          <div className="mt-1 whitespace-nowrap text-[11px] text-rose-600 dark:text-rose-400">Sisa {formatRp(inv.remaining_amount)}</div>
-                        )}
+                      <TableCell className="whitespace-nowrap text-right font-medium [font-variant-numeric:tabular-nums]">
+                        {formatRp(inv.total_amount)}
                       </TableCell>
+                      <TableCell className="whitespace-nowrap text-right [font-variant-numeric:tabular-nums]">
+                        {inv.status === "lunas"
+                          ? <span className="text-muted-foreground">-</span>
+                          : <span className="text-rose-600 dark:text-rose-400">{formatRp(inv.remaining_amount)}</span>}
+                      </TableCell>
+                      <TableCell><StatusBadge status={inv.status} /></TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" title="Hapus invoice"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
