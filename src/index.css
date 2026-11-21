@@ -226,16 +226,15 @@ th.text-right {
 .po-wait,
 .po-act { margin-top: 0.75rem; }
 
+/* Info dibagi kolom-kolom kecil yang isinya menurun (Item/Est./Tahap, ukuran, Qty/Deadline, Mesin) */
 .po-info {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     min-width: 0;
-    column-gap: 1rem;
-    row-gap: 0.375rem;
-    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+    gap: 0.625rem 1rem;
 }
-.po-info-wide {
-    grid-column: span 2;
-}
+.po-info > * { flex: 1 1 120px; }
+.po-info > :first-child { flex-basis: 190px; flex-grow: 1.6; }
 
 /* Kartu sedang (iPad, laptop kecil): identitas + aksi di baris atas */
 @container (min-width: 560px) {
@@ -253,7 +252,7 @@ th.text-right {
 /* Kartu lebar (desktop): satu baris seperti tampilan sebelumnya */
 @container (min-width: 1280px) {
     .po-row {
-        grid-template-columns: 13rem minmax(0, 1fr) 14rem 17rem;
+        grid-template-columns: 11rem minmax(0, 1fr) 11rem 17rem;
         grid-template-areas: "id info wait act";
         align-items: center;
         column-gap: 1.25rem;
@@ -262,7 +261,8 @@ th.text-right {
     .po-wait,
     .po-act { margin-top: 0; }
     .po-info {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        display: grid;
+        grid-template-columns: minmax(170px, 1.5fr) repeat(4, minmax(0, 1fr));
     }
 }
 

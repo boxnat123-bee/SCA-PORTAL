@@ -29,14 +29,17 @@ function BucketBadge({ bucket }) {
   );
 }
 
-function RowInfo({ label, value, wide, danger }) {
+function RowInfo({ label, value, danger }) {
   return (
-    <div className={`min-w-0 ${wide ? "po-info-wide" : ""}`}>
-      <div className={`truncate text-[10px] uppercase leading-4 tracking-wide ${danger ? "font-semibold text-rose-600" : "text-muted-foreground"}`}>{label}</div>
-      <div className={`truncate font-medium ${danger ? "text-rose-600 dark:text-rose-400" : ""}`} title={value || ""}>{value || "-"}</div>
+    <div className="min-w-0">
+      <div className={`truncate text-[10px] uppercase leading-[14px] tracking-wide ${danger ? "font-semibold text-rose-600" : "text-muted-foreground"}`}>{label}</div>
+      <div className={`truncate text-[13px] font-medium leading-[18px] ${danger ? "text-rose-600 dark:text-rose-400" : ""}`} title={value || ""}>{value || "-"}</div>
     </div>
   );
 }
+
+/** Satu kolom info yang disusun menurun. */
+const InfoCol = ({ children }) => <div className="flex min-w-0 flex-col gap-1">{children}</div>;
 
 // Warna progres naik bertahap: merah → oranye → biru → hijau tua (100%). [batas %, bar, badge bg, badge teks]
 const PROGRESS_TONES = [
@@ -61,12 +64,12 @@ function StageProgress({ po }) {
   const pct = finished ? 100 : doneCount ? Math.min(95, Math.max(5, Math.round(raw / 5) * 5)) : 0;
   const [, bar, badge] = PROGRESS_TONES.find(([max]) => pct <= max);
   return (
-    <div className="mt-3" aria-label={`Progres ${pct}%`}>
+    <div className="mt-2.5" aria-label={`Progres ${pct}%`}>
       <div className="mb-1.5 flex items-center justify-between gap-3">
         <span className="text-xs text-muted-foreground">{finished ? "Semua tahap selesai" : `Tahap ${doneCount} dari ${total}`}</span>
         <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge}`}>{finished ? "Selesai" : `${pct}% Selesai`}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-secondary">
+      <div className="h-[7px] overflow-hidden rounded-full bg-secondary">
         <div className={`h-full rounded-full transition-[width] duration-500 ${bar}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -222,14 +225,29 @@ export default function PoList() {
                   </div>
 
                   {/* Info utama */}
-                  <div className="po-info text-sm">
-                    <RowInfo label="Item" value={po.item_type} />
-                    <RowInfo label="Ukuran Kertas" value={po.paper_size} />
-                    <RowInfo label="Qty Order" value={po.quantity} />
-                    <RowInfo label="Mesin" value={po.print_machine} />
-                    <RowInfo label="Est. Produksi" value={(po.est_start || po.est_end) ? `${fmtDate(po.est_start)} → ${fmtDate(po.est_end)}` : ""} wide />
-                    <RowInfo label="Deadline" value={po.deadline ? fmtDate(po.deadline) : ""} danger={!!po.deadline} />
-                    <RowInfo label={t("stage")} value={po.computed?.current_stage_name} wide />
+                  <div className="po-info">
+                    <InfoCol>
+                      <RowInfo label="Item" value={po.item_type} />
+                      <RowInfo label="Est. Produksi" value={(po.est_start || po.est_end) ? `${fmtDate(po.est_start)} → ${fmtDate(po.est_end)}` : ""} />
+                      <RowInfo label={t("stage")} value={po.computed?.current_stage_name} />
+                    </InfoCol>
+                    {/* Ukuran — urutan sama dengan form PO */}
+                    <InfoCol>
+                      <RowInfo label="Kertas Plano" value={po.paper_size_plano} />
+                      <RowInfo label="Kertas" value={po.paper_size} />
+                      <RowInfo label="Kres Cetak" value={po.size_kres_cetak} />
+                    </InfoCol>
+                    <InfoCol>
+                      <RowInfo label="Single Face" value={po.size_single_face} />
+                      <RowInfo label="Kres Pisau Plong" value={po.size_kres_pisau} />
+                    </InfoCol>
+                    <InfoCol>
+                      <RowInfo label="Qty Order" value={po.quantity} />
+                      <RowInfo label="Deadline" value={po.deadline ? fmtDate(po.deadline) : ""} danger={!!po.deadline} />
+                    </InfoCol>
+                    <InfoCol>
+                      <RowInfo label="Mesin" value={po.print_machine} />
+                    </InfoCol>
                   </div>
 
                   {/* Checklist barang yang ditunggu */}
