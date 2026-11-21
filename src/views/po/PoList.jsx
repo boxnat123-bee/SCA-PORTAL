@@ -52,9 +52,26 @@ const PROGRESS_TONES = [
 ];
 
 /** Progres tahap PO: bar tebal berwarna + badge "% Selesai" (kelipatan 5) + "Tahap x dari n". */
+/** Tautan kecil "Unduh PDF" untuk satu PO (di baris progres). */
+function PoPdfLink({ po }) {
+  const [busy, setBusy] = useState(false);
+  const download = async () => {
+    setBusy(true);
+    try { await api.exportPoRekapPdf({ id: po.id }, `PO_${String(po.po_number || "SCA").replace(/[^\w.-]+/g, "_")}.pdf`); }
+    catch { toast.error("Gagal mengunduh PDF"); }
+    finally { setBusy(false); }
+  };
+  return (
+    <button type="button" onClick={download} disabled={busy} data-testid={`po-pdf-${po.po_number}`}
+      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline disabled:opacity-60">
+      <FileDown className="h-3.5 w-3.5" /> {busy ? "Mengunduh…" : "Unduh PDF"}
+    </button>
+  );
+}
+
 function StageProgress({ po }) {
   const enabled = STAGE_ORDER.filter((n) => (po.enabled_stages || []).includes(n));
-  if (!enabled.length) return null;
+  if (!enabled.length) return <div className="mt-2.5 text-xs"><PoPdfLink po={po} /></div>;
   const done = new Set(po.computed?.done_stages || []);
   const total = enabled.length;
   const doneCount = enabled.filter((n) => done.has(n)).length;
@@ -66,7 +83,11 @@ function StageProgress({ po }) {
   return (
     <div className="mt-2.5" aria-label={`Progres ${pct}%`}>
       <div className="mb-1.5 flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">{finished ? "Semua tahap selesai" : `Tahap ${doneCount} dari ${total}`}</span>
+        <span className="flex items-center gap-2.5 text-xs text-muted-foreground">
+          {finished ? "Semua tahap selesai" : `Tahap ${doneCount} dari ${total}`}
+          <span className="text-border" aria-hidden="true">|</span>
+          <PoPdfLink po={po} />
+        </span>
         <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge}`}>{finished ? "Selesai" : `${pct}% Selesai`}</span>
       </div>
       <div className="h-[7px] overflow-hidden rounded-full bg-secondary">

@@ -24,12 +24,13 @@ export const deleteSchedule = (id) => api.delete(`/po/schedules/${id}`).then((r)
 
 export const poDashboard = () => api.get("/po/dashboard").then((r) => r.data);
 
-export async function exportPoRekapPdf(params = {}) {
+/** PDF Rekap PO; dengan params.id hanya satu PO (nama file PO_<nomor>.pdf). */
+export async function exportPoRekapPdf(params = {}, filename) {
   const res = await api.get("/po/pos/export/pdf", { params, responseType: "blob" });
   const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Rekap_PO_SCA${params.month ? "_" + params.month : ""}.pdf`;
+  a.download = filename || `Rekap_PO_SCA${params.month ? "_" + params.month : ""}.pdf`;
   document.body.appendChild(a);
   a.click();
   a.remove();
