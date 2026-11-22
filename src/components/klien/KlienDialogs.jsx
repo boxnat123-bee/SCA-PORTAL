@@ -530,6 +530,10 @@ export function KlienDetailDialog({ open, onOpenChange, item, po, klien, onChang
           <div className="text-[11px] text-muted-foreground">Stok saat ini</div>
           <div className="text-lg font-bold tabular-nums">{fmtQty(item?.kuantiti)} <span className="text-xs font-medium text-muted-foreground">{item?.satuan}</span></div>
         </div>
+        <div className="mt-2 rounded-lg bg-secondary/70 px-3 py-2.5" data-testid="klien-detail-keterangan">
+          <div className="text-[11px] text-muted-foreground">Keterangan</div>
+          <div className="whitespace-pre-wrap break-words text-sm">{item?.keterangan || "-"}</div>
+        </div>
         <div className="my-4 h-px bg-border" />
         <div className="mb-2 text-xs font-semibold tracking-[0.05em] text-muted-foreground">RIWAYAT · {rows.length} MUTASI</div>
         {listBody}
