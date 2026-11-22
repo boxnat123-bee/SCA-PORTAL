@@ -1,4 +1,7 @@
 import { formatRp } from "@/lib/format";
+import MoneyInput from "@/components/MoneyInput";
+
+const RATE_CLS = "h-9 w-full rounded-md border border-border bg-background text-right text-sm tabular-nums shadow-soft outline-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/25";
 
 const RateRow = ({ label, pct, onPct, amount }) => (
   <div className="flex items-center justify-between gap-3 py-2">
@@ -11,7 +14,7 @@ const RateRow = ({ label, pct, onPct, amount }) => (
             inputMode="decimal"
             value={pct ?? ""}
             onChange={(e) => onPct(e.target.value.replace(/[^\d.,]/g, ""))}
-            className="h-9 w-full rounded-md border border-border bg-background pl-2.5 pr-6 text-right tabular-nums text-sm tabular-nums shadow-soft outline-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/25"
+            className={`${RATE_CLS} pl-2.5 pr-6`}
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
         </div>
@@ -20,6 +23,40 @@ const RateRow = ({ label, pct, onPct, amount }) => (
     <span className="tabular-nums text-sm">{formatRp(amount)}</span>
   </div>
 );
+
+/** Laba: persen (dari subtotal + bunga) atau Rupiah per pcs. */
+const LabaRow = ({ rates, onRate, amount }) => {
+  const rpMode = rates.labaMode === "rp";
+  return (
+    <div className="flex items-center justify-between gap-3 py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Laba</span>
+        <div className="flex rounded-md border border-border p-0.5 text-[11px] font-semibold" role="group" aria-label="Satuan laba">
+          {[["pct", "%"], ["rp", "Rp"]].map(([k, l]) => (
+            <button key={k} type="button" onClick={() => onRate("labaMode", k)} data-testid={`laba-mode-${k}`}
+              className={`rounded px-1.5 py-0.5 ${(rpMode ? "rp" : "pct") === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
+          ))}
+        </div>
+        <div className={rpMode ? "w-24" : "w-20"}>
+          {rpMode ? (
+            <div className="relative">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Rp</span>
+              <MoneyInput value={rates.labaRp ?? ""} onChange={(v) => onRate("labaRp", v)} placeholder="0"
+                data-testid="input-rate-laba-rp" className={`${RATE_CLS} pl-7 pr-2`} />
+            </div>
+          ) : (
+            <div className="relative">
+              <input data-testid="input-rate-laba" inputMode="decimal" value={rates.labaPct ?? ""}
+                onChange={(e) => onRate("labaPct", e.target.value.replace(/[^\d.,]/g, ""))} className={`${RATE_CLS} pl-2.5 pr-6`} />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+            </div>
+          )}
+        </div>
+      </div>
+      <span className="tabular-nums text-sm">{formatRp(amount)}</span>
+    </div>
+  );
+};
 
 export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, onToggle }) {
   return (
@@ -52,7 +89,7 @@ export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, on
         </div>
         <div className="mt-2">
           <RateRow label="Bunga" pct={rates.bungaPct} onPct={(v) => onRate("bungaPct", v)} amount={res.bunga} />
-          <RateRow label="Laba" pct={rates.labaPct} onPct={(v) => onRate("labaPct", v)} amount={res.laba} />
+          <LabaRow rates={rates} onRate={onRate} amount={res.laba} />
           <RateRow label="PPN" pct={rates.ppnPct} onPct={(v) => onRate("ppnPct", v)} amount={res.ppn} />
         </div>
         <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t-2 border-primary">

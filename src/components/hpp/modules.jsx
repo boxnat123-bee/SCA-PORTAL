@@ -132,7 +132,7 @@ const Warna = ({ s, u, r }) => {
   const delTinta = (i) => u("tintas", tintas.filter((_, j) => j !== i));
   return (
     <>
-      <SectionTitle title="Warna"
+      <SectionTitle title="Cetak (SCA)"
         hint="(Σ Kebutuhan Tinta Kg × Harga per Kg) + Biaya Listrik + Gaji Operator, lalu dibagi Quantity Order (Pcs)." />
 
       <div className="flex items-center justify-between gap-3 mb-3">
@@ -189,7 +189,7 @@ const Warna = ({ s, u, r }) => {
         <ResultLine label="Total Biaya Warna" value={r.totalBiaya} />
         <ResultLine label={`÷ Quantity Order (${formatGroup(r.qtyOrder) || 0} pcs)`} value={r.output} strong testid="warna-result-pcs" />
       </Box>
-      <div className="mt-4"><OutputCard label="Harga Warna / Pcs" value={r.output} /></div>
+      <div className="mt-4"><OutputCard label="Cetak (SCA) / Pcs" value={r.output} /></div>
     </>
   );
 };
@@ -399,7 +399,7 @@ const PisauPapan = ({ s, u, r }) => (
 
 const Plong = ({ s, u, r }) => (
   <>
-    <SectionTitle title="Plong" hint="Biaya plong per pcs." />
+    <SectionTitle title="Plong Borongan" hint="Biaya plong borongan per lembar, dibagi pcs per lembar." />
     <Grid>
       <Field label="Ukuran Mesin Plong (Cm)" unit="P x L" testid="field-plong-ukuran">
         <div className="flex gap-2">
@@ -418,7 +418,7 @@ const Plong = ({ s, u, r }) => (
 
 const OngkosPlong = ({ s, u, r }) => (
   <>
-    <SectionTitle title="Jasa Ongkos Plong" hint="Biaya jasa plong ke pihak lain per pcs." />
+    <SectionTitle title="Plong" hint="Biaya jasa plong (mesin, minimal lembar) per pcs." />
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Data Jasa Plong</p>
     <Grid>
       <Field label="Ukuran Mesin Plong (Cm)" unit="P x L" testid="field-op-mesin">
@@ -455,7 +455,7 @@ const OngkosPlong = ({ s, u, r }) => (
 
 const Other = ({ s, u, r }) => (
   <>
-    <SectionTitle title="Transportasi / Potong / Packing" hint="Biaya lain-lain: transport, packing, potong bahan, kopek & plong, potong rajang." />
+    <SectionTitle title="Potong Kertas / Kopek / Rajang / Paking / Transpor" hint="Masing-masing tampil sebagai baris sendiri di Rincian & PDF (hanya yang dipakai)." />
     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Transportasi</p>
     <Grid>
       <Field label="Lokasi Pengiriman" testid="field-oth-lokasi"><TextInput testid="input-oth-lokasi" value={s.lokasi} onChange={(v) => u("lokasi", v)} /></Field>
@@ -485,14 +485,13 @@ const Other = ({ s, u, r }) => (
       <Field label="Quantity Order" unit="Pcs" testid="field-oth-qtyr"><NumberInput testid="input-oth-qtyr" value={s.qtyOrderR} onChange={(v) => u("qtyOrderR", v)} /></Field>
     </Grid>
     <Box>
-      <ResultLine label="Transportasi / Pcs" value={r.transport} />
-      <ResultLine label="Packing dll / Pcs" value={r.paking} />
-      <ResultLine label="Potong Bahan / Pcs" value={r.potong} />
-      <ResultLine label="Kopek & Plong / Pcs" value={r.kopek} />
-      <ResultLine label="Potong Rajang / Pcs" value={r.rajang} />
-      <ResultLine label="Total Others / Pcs" value={r.output} strong />
+      <ResultLine label="Potong Kertas / Pcs" value={r.potong} />
+      <ResultLine label="Kopek / Pcs" value={r.kopek} />
+      <ResultLine label="Rajang / Pcs" value={r.rajang} />
+      <ResultLine label="Paking / Pcs" value={r.paking} />
+      <ResultLine label="Transpor / Pcs" value={r.transport} />
+      <ResultLine label="Total / Pcs" value={r.output} strong />
     </Box>
-    <div className="mt-4"><OutputCard label="Total Biaya Others / Pcs" value={r.output} /></div>
   </>
 );
 
@@ -599,7 +598,7 @@ const UkArea = ({ s, u, r }) => {
 
 export const MODULES = [
   { id: "kertas", label: "Kertas", icon: FileStack, Component: Kertas },
-  { id: "warna", label: "Warna", icon: Palette, Component: Warna },
+  { id: "warna", label: "Cetak (SCA)", icon: Palette, Component: Warna },
   { id: "ongkosCetak", label: "Ongkos Cetak", icon: Printer, Component: OngkosCetak },
   { id: "design", label: "Design", icon: PenTool, Component: Design },
   { id: "ctp", label: "CTP", icon: Layers, Component: CTP },
@@ -607,9 +606,9 @@ export const MODULES = [
   { id: "laminasi", label: "Single Face", icon: Layers, Component: Laminasi },
   { id: "lem", label: "Lem", icon: Droplets, Component: Lem },
   { id: "pisauPapan", label: "Pisau & Papan", icon: Scissors, Component: PisauPapan },
-  { id: "plong", label: "Plong", icon: SquareStack, Component: Plong },
-  { id: "ongkosPlong", label: "Ongkos Plong", icon: Grid3x3, Component: OngkosPlong },
-  { id: "other", label: "Other", icon: Truck, Component: Other },
+  { id: "plong", label: "Plong Borongan", icon: SquareStack, Component: Plong },
+  { id: "ongkosPlong", label: "Plong", icon: Grid3x3, Component: OngkosPlong },
+  { id: "other", label: "Potong, Kopek, dll", icon: Truck, Component: Other },
   { id: "ukArea", label: "Uk Area Cetak", icon: Ruler, Component: UkArea },
 ];
 

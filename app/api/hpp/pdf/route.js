@@ -14,6 +14,7 @@ export const POST = handle(async (req) => {
     notes: body.notes || "",
     company: body.company || "Percetakan SCA",
     result: body.result || {},
+    info: body.info || {},
   });
   const fname = String(body.name || "hpp").replace(/\s+/g, "_");
   return pdfResponse(bytes, `HPP_${fname}.pdf`);

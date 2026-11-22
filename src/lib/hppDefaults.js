@@ -1,7 +1,15 @@
 export const allEnabled = () => ({
   kertas: true, warna: true, ongkosCetak: true, design: true, ctp: true,
   finishing: true, laminasi: true, lem: true, pisauPlong: true, papanPlong: true,
-  plong: true, ongkosPlong: true, other: true,
+  plong: true, ongkosPlong: true, potong: true, kopek: true, rajang: true, paking: true, transpor: true,
+});
+
+/** Data tambahan khusus PDF: info order, kotak Catatan (2 kolom), dan gambar Susunan Kertas. */
+export const emptyPdfInfo = () => ({
+  qtyOrder: "",
+  ukPlano: "", ukLembar: "", ukKresCetak: "", ukSingleFace: "",
+  warna: "", kebutuhanPlano: "", beliKertas: "", totalHasil: "",
+  planoP: "", planoL: "", produkP: "", produkL: "", kolom: "", baris: "", lembar: "", arahPotong: "tegak", gandeng: "",
 });
 
 export const defaultState = () => ({
@@ -50,8 +58,9 @@ export const defaultState = () => ({
     biayaRajangRim: "10000", qtyLembarRajang: "1050", qtyOrderR: "2100",
   },
   ukArea: { bahan: "Duplex Coat", planoP: "90", planoL: "120", cetakP: "81.5", cetakL: "54.5", kresP: "0.1", kresL: "2", anlegP: "1.4", sf: "0.7", arahSerat: "P" },
-  total: { labaPct: "15", bungaPct: "1", ppnPct: "11" },
+  total: { labaMode: "pct", labaPct: "15", labaRp: "", bungaPct: "1", ppnPct: "11" },
   enabled: allEnabled(),
+  pdfInfo: emptyPdfInfo(),
 });
 
 export const emptyState = () => ({
@@ -68,6 +77,7 @@ export const emptyState = () => ({
   ongkosPlong: { ukuranMesinP: "", ukuranMesinL: "", minLembarPlong: "", biayaMinimum: "", biayaSetelahMin: "", ukuranLembarP: "", ukuranLembarL: "", qtyPerLembar: "", qtyOrder: "" },
   other: { lokasi: "", biayaTranspor: "", qtyOrderT: "", biayaPaking: "", qtyHari: "", biayaPotongRim: "", qtyLembarPlano: "", qtyOrderP: "", biayaKopekLbr: "", qtyPcsLbr: "", biayaRajangRim: "", qtyLembarRajang: "", qtyOrderR: "" },
   ukArea: { bahan: "", planoP: "", planoL: "", cetakP: "", cetakL: "", kresP: "", kresL: "", anlegP: "", sf: "", arahSerat: "P" },
-  total: { labaPct: "15", bungaPct: "1", ppnPct: "11" },
+  total: { labaMode: "pct", labaPct: "15", labaRp: "", bungaPct: "1", ppnPct: "11" },
   enabled: allEnabled(),
+  pdfInfo: emptyPdfInfo(),
 });

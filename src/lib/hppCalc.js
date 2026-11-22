@@ -164,6 +164,9 @@ export function calcUkArea(a) {
   };
 }
 
+// Tab "Other" dipecah per baris di Rincian (PDF & ringkasan).
+export const OTHER_KEYS = ["potong", "kopek", "rajang", "paking", "transpor"];
+
 export function calcAll(s) {
   const kertas = calcKertas(s.kertas);
   const warna = calcWarna(s.warna);
@@ -180,37 +183,57 @@ export function calcAll(s) {
   const ukArea = calcUkArea(s.ukArea);
 
   const en = s.enabled || {};
-  const isOn = (k) => en[k] !== false;
-  const components = [
+  // Data lama: tab Other dimatikan sekaligus (enabled.other) → kelima barisnya ikut mati.
+  const isOn = (k) => en[k] !== false && !(OTHER_KEYS.includes(k) && en.other === false);
+  const manualAll = s.manual || {};
+  const vendor = String(s.ongkosCetak?.percetakan || "").replace(/\s+/g, " ").trim();
+  // Urutan = urutan Rincian Komponen Biaya di PDF.
+  let rows = [
     { key: "kertas", label: "Kertas", value: kertas.output },
-    { key: "warna", label: "Warna", value: warna.output },
-    { key: "ongkosCetak", label: "Ongkos Cetak", value: ongkosCetak.output },
-    { key: "design", label: "Design", value: design.output },
-    { key: "ctp", label: "CTP", value: ctp.output },
-    { key: "finishing", label: "Finishing", value: finishing.output },
-    { key: "laminasi", label: "Single Face", value: laminasi.output },
-    { key: "lem", label: "Lem", value: lem.output },
+    { key: "design", label: "Desain", value: design.output },
+    { key: "ctp", label: "CTCP", value: ctp.output },
     { key: "pisauPlong", label: "Pisau Plong", value: pisauPapan.pisau },
     { key: "papanPlong", label: "Papan Plong", value: pisauPapan.papan },
-    { key: "plong", label: "Plong", value: plong.output },
-    { key: "ongkosPlong", label: "Jasa Ongkos Plong", value: ongkosPlong.output },
-    { key: "other", label: "Transportasi / Potong / Packing", value: other.output },
-  ].map((c) => {
+    { key: "potong", label: "Potong Kertas", value: other.potong },
+    { key: "warna", label: "Cetak (SCA)", value: warna.output },
+    { key: "ongkosCetak", label: `Cetak (${vendor || "Vendor"})`, value: ongkosCetak.output },
+    { key: "laminasi", label: "Single Face", value: laminasi.output },
+    { key: "finishing", label: "Finishing", value: finishing.output },
+    { key: "plong", label: "Plong Borongan", value: plong.output },
+    { key: "ongkosPlong", label: "Plong", value: ongkosPlong.output },
+    { key: "kopek", label: "Kopek", value: other.kopek },
+    { key: "rajang", label: "Rajang", value: other.rajang },
+    { key: "lem", label: "Lem", value: lem.output },
+    { key: "paking", label: "Paking", value: other.paking },
+    { key: "transpor", label: "Transpor", value: other.transport },
+  ];
+  // Perhitungan lama: "Penghitungan sendiri" untuk seluruh tab Other → satu baris gabungan.
+  if (manualAll.other?.on) {
+    const at = rows.findIndex((r) => r.key === "potong");
+    rows = rows.filter((r) => !OTHER_KEYS.includes(r.key));
+    rows.splice(at, 0, { key: "other", label: "Transpor / Potong / Paking", value: other.output });
+  }
+  const components = rows.map((c) => {
     // "Penghitungan sendiri": Biaya/Pcs yang diketik MENGGANTIKAN hasil otomatis tahap ini.
-    const m = (s.manual || {})[c.key];
-    const manual = !!(m && m.on);
+    // Keterangan (rumus) selalu ikut ke PDF bila diisi.
+    const m = manualAll[c.key] || {};
+    const manual = !!m.on;
     const val = manual ? n(m.biaya) : c.value;
-    return { ...c, manual, rumus: manual ? String(m.rumus || "") : "", enabled: isOn(c.key), value: isOn(c.key) ? val : 0 };
+    const on = c.key === "other" ? en.other !== false : isOn(c.key);
+    return { ...c, manual, rumus: String(m.rumus || ""), enabled: on, value: on ? val : 0 };
   });
 
   const subtotal = components.reduce((a, c) => a + (c.value || 0), 0);
-  const labaPct = n(s.total.labaPct);
-  const bungaPct = n(s.total.bungaPct);
-  const ppnPct = n(s.total.ppnPct);
-  // Urutan: Subtotal → Bunga → Laba → PPN → Harga jual (hasil akhir sama, hanya pembagian nominalnya).
+  const t = s.total || {};
+  const labaMode = t.labaMode === "rp" ? "rp" : "pct";
+  const labaPct = n(t.labaPct);
+  const labaRp = n(t.labaRp);
+  const bungaPct = n(t.bungaPct);
+  const ppnPct = n(t.ppnPct);
+  // Urutan: Subtotal → Bunga → Laba → PPN → Harga jual. Laba bisa % (dari subtotal + bunga) atau Rp per pcs.
   const bunga = (bungaPct / 100) * subtotal;
   const afterBunga = subtotal + bunga;
-  const laba = (labaPct / 100) * afterBunga;
+  const laba = labaMode === "rp" ? labaRp : (labaPct / 100) * afterBunga;
   const afterLaba = afterBunga + laba;
   const ppn = (ppnPct / 100) * afterLaba;
   const final = afterLaba + ppn;
@@ -218,7 +241,7 @@ export function calcAll(s) {
   return {
     kertas, warna, ongkosCetak, design, ctp, finishing, laminasi, lem,
     pisauPapan, plong, ongkosPlong, other, ukArea,
-    components, subtotal, labaPct, bungaPct, ppnPct, laba, afterLaba,
+    components, subtotal, labaMode, labaPct, labaRp, bungaPct, ppnPct, laba, afterLaba,
     bunga, afterBunga, ppn, final,
   };
 }

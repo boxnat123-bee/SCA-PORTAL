@@ -8,6 +8,7 @@ import { calcAll, normalizeWarna } from "@/lib/hppCalc";
 import { formatRp } from "@/lib/format";
 import { MODULES, SUMMARY_ICON } from "@/components/hpp/modules";
 import SummaryPanel from "@/components/hpp/SummaryPanel";
+import PdfInfoCard from "@/components/hpp/PdfInfoCard";
 import MoneyInput from "@/components/MoneyInput";
 import * as api from "@/lib/hppApi";
 
@@ -15,43 +16,45 @@ const NAV = [{ id: "summary", label: "Ringkasan", icon: SUMMARY_ICON }, ...MODUL
 
 // Komponen biaya per tahap (modul Pisau & Papan punya 2 komponen).
 const MODULE_COMPONENTS = {
-  kertas: [["kertas", "Kertas"]], warna: [["warna", "Warna"]], ongkosCetak: [["ongkosCetak", "Ongkos Cetak"]],
-  design: [["design", "Design"]], ctp: [["ctp", "CTP"]], finishing: [["finishing", "Finishing"]],
+  kertas: [["kertas", "Kertas"]], warna: [["warna", "Cetak (SCA)"]], ongkosCetak: [["ongkosCetak", "Ongkos Cetak (Vendor)"]],
+  design: [["design", "Desain"]], ctp: [["ctp", "CTCP"]], finishing: [["finishing", "Finishing"]],
   laminasi: [["laminasi", "Single Face"]], lem: [["lem", "Lem"]],
   pisauPapan: [["pisauPlong", "Pisau Plong"], ["papanPlong", "Papan Plong"]],
-  plong: [["plong", "Plong"]], ongkosPlong: [["ongkosPlong", "Jasa Ongkos Plong"]],
-  other: [["other", "Transportasi / Potong / Packing"]],
+  plong: [["plong", "Plong Borongan"]], ongkosPlong: [["ongkosPlong", "Plong"]],
+  other: [["potong", "Potong Kertas"], ["kopek", "Kopek"], ["rajang", "Rajang"], ["paking", "Paking"], ["transpor", "Transpor"]],
 };
+// Baris ringkasan → tab yang membukanya.
+const ROW_TAB = { pisauPlong: "pisauPapan", papanPlong: "pisauPapan", potong: "other", kopek: "other", rajang: "other", paking: "other", transpor: "other" };
 
-/** Opsi "Penghitungan sendiri": rumus manual + Biaya/Pcs yang menggantikan hasil otomatis. */
+/**
+ * Keterangan tahap (tampil biru di bawah baris PDF) + opsi "Penghitungan sendiri":
+ * bila dicentang, Biaya/Pcs yang diketik menggantikan hasil otomatis.
+ */
 function ManualBox({ compKey, label, value, onChange, showLabel }) {
   const m = value || {};
   const set = (k, v) => onChange({ ...m, [k]: v });
   return (
     <div className={`mb-5 rounded-lg border p-3.5 ${m.on ? "border-primary/40 bg-primary/[0.04]" : "border-border bg-secondary/40"}`} data-testid={`manual-${compKey}`}>
-      <label className="flex cursor-pointer items-center gap-2.5 text-sm font-semibold">
-        <input type="checkbox" className="h-4 w-4 accent-primary" checked={!!m.on} onChange={(e) => set("on", e.target.checked)} />
-        Penghitungan sendiri{showLabel ? ` — ${label}` : ""}
-        <span className="text-xs font-normal text-muted-foreground">(Biaya/Pcs manual menggantikan hasil otomatis)</span>
-      </label>
-      {m.on && (
-        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_220px]">
-          <div>
-            <div className="mb-1.5 text-xs font-semibold text-muted-foreground">Perhitungan</div>
-            <textarea rows={2} value={m.rumus || ""} onChange={(e) => set("rumus", e.target.value)}
-              placeholder="cth: (2 kg × Rp 85.000 + Rp 150.000) ÷ 5.000 pcs"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25" />
-          </div>
-          <div>
-            <div className="mb-1.5 text-xs font-semibold text-muted-foreground">Biaya / Pcs</div>
-            <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25">
-              <span className="text-sm text-muted-foreground">Rp</span>
-              <MoneyInput value={m.biaya ?? ""} onChange={(v) => set("biaya", v)} placeholder="0"
-                className="w-full bg-transparent text-right text-sm font-semibold tabular-nums outline-none" />
-            </div>
+      {showLabel && <div className="mb-2 text-sm font-semibold">{label}</div>}
+      <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+        <div>
+          <div className="mb-1.5 text-xs font-semibold text-muted-foreground">Keterangan / Perhitungan <span className="font-normal">(tampil di PDF)</span></div>
+          <textarea rows={2} value={m.rumus || ""} onChange={(e) => set("rumus", e.target.value)}
+            placeholder="cth: Rp 7.500/rim × 34,5 rim : 100rb pcs = Rp 2,6"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25" />
+        </div>
+        <div>
+          <label className="mb-1.5 flex cursor-pointer items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={!!m.on} onChange={(e) => set("on", e.target.checked)} />
+            Biaya / Pcs manual
+          </label>
+          <div className={`flex h-11 items-center gap-2 rounded-md border border-border bg-background px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 ${m.on ? "" : "opacity-50"}`}>
+            <span className="text-sm text-muted-foreground">Rp</span>
+            <MoneyInput value={m.biaya ?? ""} onChange={(v) => set("biaya", v)} placeholder="otomatis" disabled={!m.on}
+              className="w-full bg-transparent text-right text-sm font-semibold tabular-nums outline-none" />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -103,10 +106,11 @@ export default function HppCalculator() {
   const snapshot = () => ({
     name: meta.name || "HPP", customer: meta.customer, notes: meta.notes,
     inputs: state,
+    info: state.pdfInfo || {},
     result: {
       components: res.components.map((c) => ({ key: c.key, label: c.label, value: c.value, enabled: c.enabled, manual: c.manual, rumus: c.rumus })),
       subtotal: res.subtotal,
-      labaPct: res.labaPct, bungaPct: res.bungaPct, ppnPct: res.ppnPct,
+      labaMode: res.labaMode, labaRp: res.labaRp, labaPct: res.labaPct, bungaPct: res.bungaPct, ppnPct: res.ppnPct,
       laba: res.laba, bunga: res.bunga, ppn: res.ppn, final: res.final,
     },
   });
@@ -222,13 +226,11 @@ export default function HppCalculator() {
         {/* Main */}
         <main className="flex-1 min-w-0 flex flex-col 2xl:flex-row gap-6">
           <div className="flex-1 min-w-0">
-            {/* Catatan — hanya di Ringkasan; tampil di PDF (kotak di bawah tanggal, di atas Rincian Komponen Biaya) */}
-            {active === "summary" && <div className="mb-4 rounded-xl border border-border/70 bg-card p-4 shadow-soft" data-testid="hpp-notes-card">
-              <label htmlFor="hpp-notes" className="text-sm font-semibold">Catatan <span className="font-normal text-muted-foreground">(tampil di PDF)</span></label>
-              <textarea id="hpp-notes" rows={2} value={meta.notes || ""} onChange={(e) => setMeta((m) => ({ ...m, notes: e.target.value }))}
-                placeholder="cth: Harga berlaku 14 hari, belum termasuk ongkos kirim."
-                className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25" />
-            </div>}
+            {/* Data khusus PDF (info order, kotak Catatan, Susunan Kertas) — hanya di Ringkasan */}
+            {active === "summary" && (
+              <PdfInfoCard meta={meta} setMeta={setMeta} info={state.pdfInfo || {}}
+                setInfo={(k, v) => setState((p) => ({ ...p, pdfInfo: { ...(p.pdfInfo || {}), [k]: v } }))} />
+            )}
             <AnimatePresence mode="wait">
               <motion.div key={active}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
@@ -238,7 +240,7 @@ export default function HppCalculator() {
                   <>
                     <div className="mb-5">
                       <h3 className="font-display text-xl font-semibold">Ringkasan Total HPP</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Total dari 13 komponen biaya, lalu ditambah Bunga, Laba, dan PPN.</p>
+                      <p className="text-sm text-muted-foreground mt-1">Total komponen biaya yang dipakai, lalu ditambah Bunga, Laba, dan PPN.</p>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4 mb-6">
                       <div className="rounded-lg border border-border p-4">
@@ -272,7 +274,7 @@ export default function HppCalculator() {
               <SummaryPanel res={res} rates={state.total}
                 onRate={setRate}
                 enabled={state.enabled} onToggle={toggleEnabled}
-                onSelect={(k) => { const map = { pisauPlong: "pisauPapan", papanPlong: "pisauPapan" }; setActive(map[k] || k); }} />
+                onSelect={(k) => setActive(ROW_TAB[k] || k)} />
             </div>
           </div>
         </main>
