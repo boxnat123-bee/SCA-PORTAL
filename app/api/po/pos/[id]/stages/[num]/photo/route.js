@@ -1,6 +1,7 @@
 import { handle, json, HttpError } from "@/server/http";
 import { requireAuth } from "@/server/auth";
 import { getDb, COL, nowIso } from "@/server/mongo";
+import { validStage } from "@/server/po/stages";
 import { putObject } from "@/server/r2";
 
 // Kompres foto agar preview ringan di semua device/koneksi.
@@ -42,7 +43,7 @@ export const POST = handle(async (req, { params }) => {
   const current = await requireAuth(req);
   const { id, num } = await params;
   const stageNum = Number(num);
-  if (!(stageNum >= 1 && stageNum <= 12)) throw new HttpError(400, "Nomor tahap tidak valid");
+  if (!validStage(stageNum)) throw new HttpError(400, "Nomor tahap tidak valid");
 
   const formData = await req.formData();
   const file = formData.get("file");
