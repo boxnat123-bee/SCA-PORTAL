@@ -15,15 +15,16 @@ export const STAGE_NAMES = {
   10: "Proses Packing",
   11: "Selesai Cetak & Pengiriman",
   12: "Menunggu PO Single Face",
+  13: "Proses Lam. Single Face",
 };
 
-export const MAX_STAGE = 12;
-// Urutan tampilan di form & detail.
-export const STAGE_ORDER = [1, 12, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+export const MAX_STAGE = 13;
+// Urutan tampilan di form & detail. Lam. Single Face (13) setelah Cetak & Finishing.
+export const STAGE_ORDER = [1, 12, 2, 3, 4, 5, 6, 13, 7, 8, 9, 10, 11];
 // Tahap "menunggu": masing-masing berdiri sendiri, boleh dicentang tanpa urutan.
 export const WAITING_IDS = [1, 12, 2, 3];
 // Tahap proses: berurutan (garis runutan).
-export const PROCESS_IDS = [4, 5, 6, 7, 8, 9, 10, 11];
+export const PROCESS_IDS = [4, 5, 6, 13, 7, 8, 9, 10, 11];
 
 export function validStage(n) {
   return Number.isInteger(n) && n >= 1 && n <= MAX_STAGE;

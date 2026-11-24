@@ -31,7 +31,7 @@ export const POST = handle(async (req) => {
   if (dup) throw new HttpError(400, "Nomor PO sudah ada");
 
   const now = nowIso();
-  const enabledStages = Array.isArray(body.enabled_stages) ? body.enabled_stages.map(Number).filter((n) => n >= 1 && n <= 12) : [];
+  const enabledStages = Array.isArray(body.enabled_stages) ? body.enabled_stages.map(Number).filter((n) => n >= 1 && n <= 13) : [];
   const stageData = body.stage_data || {};
   enabledStages.forEach((n) => { if (!stageData[String(n)]) stageData[String(n)] = {}; });
 

@@ -240,7 +240,7 @@ function MultiStage({ data, options, field, label, done, updateStage, t }) {
       <div>
         <Label className="mb-2 block">{label}</Label>
         <div className="grid sm:grid-cols-2 gap-2">
-          {options.map((opt) => (
+          {[...options, ...selected.filter((x) => !options.includes(x))].map((opt) => (
             <div key={opt} onClick={() => toggle(opt)}
               className={`flex items-center gap-2 rounded-xl border p-3 cursor-pointer ${selected.includes(opt) ? "border-primary bg-accent" : "border-border"}`}>
               <span data-testid={`opt-${opt}`} className={`h-5 w-5 rounded-md border flex items-center justify-center shrink-0 ${selected.includes(opt) ? "bg-primary border-primary text-primary-foreground" : "border-border"}`}>

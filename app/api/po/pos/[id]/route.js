@@ -29,7 +29,7 @@ export const PUT = handle(async (req, { params }) => {
     if (dup) throw new HttpError(400, "Nomor PO sudah ada");
   }
 
-  const enabledStages = Array.isArray(body.enabled_stages) ? body.enabled_stages.map(Number).filter((n) => n >= 1 && n <= 12) : existing.enabled_stages || [];
+  const enabledStages = Array.isArray(body.enabled_stages) ? body.enabled_stages.map(Number).filter((n) => n >= 1 && n <= 13) : existing.enabled_stages || [];
   const oldStageData = existing.stage_data || {};
   const mergedStage = { ...oldStageData };
   enabledStages.forEach((n) => { if (!mergedStage[String(n)]) mergedStage[String(n)] = {}; });

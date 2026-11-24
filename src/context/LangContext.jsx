@@ -15,6 +15,7 @@ const STAGE_NAMES_EN = {
   10: "Packing",
   11: "Done & Delivery",
   12: "Waiting Single Face PO",
+  13: "Single Face Lamination",
 };
 
 const DICT = {
