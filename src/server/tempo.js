@@ -51,6 +51,7 @@ export function buildInvoicePayload(body, existing = null) {
   const status = STATUSES.includes(body?.status) ? body.status : "belum_lunas";
   const payload = {
     client_name: clientName,
+    item_name: String(body?.item_name ?? "").trim(),
     top: String(body?.top || "Cash"),
     po_date: body?.po_date || null,
     po_number: body?.po_number ?? null,
@@ -254,7 +255,7 @@ export async function sortedInvoices({ search, status, sort_by = "due_date", ord
   const query = {};
   if (search) {
     const rx = { $regex: String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
-    query.$or = [{ client_name: rx }, { invoice_number: rx }, { po_number: rx }];
+    query.$or = [{ client_name: rx }, { item_name: rx }, { invoice_number: rx }, { po_number: rx }];
   }
   if (STATUSES.includes(status)) query.status = status;
 

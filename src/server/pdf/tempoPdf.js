@@ -149,6 +149,7 @@ export async function buildInvoiceDetailPdf({ invoice }) {
     ["Keterangan", "Nilai"],
     [
       ["Nama Klien", inv.client_name || "-"],
+      ["Nama Barang", inv.item_name || "-"],
       ["TOP / Sistem Pembayaran", inv.top || "-"],
       ["No. PO", inv.po_number || "-"],
       ["Tanggal PO", fmtDate(inv.po_date)],

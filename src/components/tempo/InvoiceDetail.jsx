@@ -55,7 +55,7 @@ export default function InvoiceDetail({ open, onOpenChange, invoice, onEdit, onT
       <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto rounded-2xl" data-testid="invoice-detail-dialog">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">{invoice.client_name}</DialogTitle>
-          <DialogDescription>Detail invoice, jatuh tempo, dan riwayat pembayaran.</DialogDescription>
+          <DialogDescription>{invoice.item_name || "Detail invoice, jatuh tempo, dan riwayat pembayaran."}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">

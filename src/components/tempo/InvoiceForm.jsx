@@ -19,7 +19,7 @@ import { formatRp } from "@/lib/format";
 import { formatNumberInput, parseNumberInput, todayISO } from "@/lib/tempoFormat";
 
 const empty = {
-  client_name: "", top: "Cash", po_number: "", po_date: "",
+  client_name: "", item_name: "", top: "Cash", po_number: "", po_date: "",
   delivery_note_number: "", delivery_note_date: "", invoice_number: "", invoice_date: todayISO(),
   nominal_amount: 0, ppn_amount: 0, due_date: "", status: "belum_lunas", paid_date: "", installments: [],
 };
@@ -134,6 +134,11 @@ export default function InvoiceForm({ open, onOpenChange, invoice, topOptions = 
           <Field label="Nama Klien *">
             <Input data-testid="form-client-name" value={form.client_name}
               onChange={(e) => set("client_name", e.target.value)} placeholder="PT Contoh Jaya" />
+          </Field>
+
+          <Field label="Nama Barang">
+            <Input data-testid="form-item-name" value={form.item_name || ""}
+              onChange={(e) => set("item_name", e.target.value)} placeholder="mis. Box Kue 20x20" />
           </Field>
 
           <Field label="TOP / Sistem Pembayaran">

@@ -238,7 +238,7 @@ export default function TempoInvoices() {
       <Card className="flex shrink-0 flex-wrap items-center gap-3 rounded-2xl p-3">
         <div className="relative min-w-0 flex-[1_1_100%] sm:flex-[1_1_320px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Cari klien / no. invoice / no. PO..." data-testid="tempo-search-input"
+          <Input className="pl-9" placeholder="Cari klien / barang / no. invoice / no. PO..." data-testid="tempo-search-input"
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -330,7 +330,10 @@ export default function TempoInvoices() {
                     <TableRow key={inv.id} data-testid={`invoice-row-${inv.id}`}
                       onClick={() => setDetail(inv)}
                       className={cn("cursor-pointer", rowTint(inv))}>
-                      <TableCell className="font-medium">{inv.client_name}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{inv.client_name}</div>
+                        {inv.item_name && <div className="text-xs text-muted-foreground">{inv.item_name}</div>}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{inv.invoice_number || "-"}</TableCell>
                       <TableCell>
                         <span className="rounded-md bg-secondary px-2 py-0.5 text-xs">{inv.top}</span>
@@ -376,6 +379,7 @@ export default function TempoInvoices() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-display font-bold">{inv.client_name}</div>
+                    {inv.item_name && <div className="truncate text-xs text-muted-foreground">{inv.item_name}</div>}
                     <div className="truncate text-xs text-muted-foreground">{inv.invoice_number || "-"} · {inv.top}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
